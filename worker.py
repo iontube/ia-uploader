@@ -23,31 +23,135 @@ ETREE_BANDS = [
 VENUES = ['gthrny','live-show','outdoor-fest','soundcheck','rehearsal','jam-session']
 
 TITLES = [
-    'Viral Hot Sex Videos 2026 Collection',
-    'Desi MMS Viral Leak HD Sex Videos',
-    'Indian Bhabhi Aunty Hot Sex Video XXX HD',
-    'Hindi BF Porn Viral Collection 2026',
-    'XnXX India Viral MMS Hot Sex Videos',
+    # auntymaza niche
     'AuntyMaza Hot Porn Viral Sex Video HD',
-    'Tamil Telugu Mallu Sex Viral Video HD',
-    'Desi Village Aunty MMS Viral Sex HD',
-    'Viral Leaked Sex Videos Indian Hot 2026',
+    'AuntyMaza Indian Bhabhi Aunty XXX Collection',
+    'AuntyMaza Married Aunty MMS Leaked',
+    'AuntyMaza Padosi Bhabhi Chudai Video',
+    'AuntyMaza Pakistani Aunty Sex HD',
+    # desimms niche
+    'Desi MMS Viral Leak HD Sex Videos',
+    'Desi MMS Hidden Cam Aunty Real',
+    'Desi MMS Village Bhabhi Original Video',
+    'Desi MMS Whatsapp Viral 2026',
+    'Desi MMS Bhabhi Devar Real Affair',
+    # hindi bf
+    'Hindi BF Porn Viral Collection 2026',
+    'Hindi BF Full HD Movie Sex',
+    'Hindi BF Audio Bhabhi Chudai',
+    'Hindi BF Dehati Randi Sex Video',
+    'Hindi BF Bollywood Style XXX',
+    # xnxx-india
+    'XnXX India Viral MMS Hot Sex Videos',
+    'XnXX Desi Aunty Bhabhi Original',
+    'XnXX Tamil Telugu Hot Sex Tape',
+    'XnXX Pakistani Indian Sex Compilation',
+    'XnXX Bollywood Actress Leaked',
+    # tamil
+    'Tamil Aunty Sex Video HD Viral',
+    'Tamil Mami Chudai Hidden Cam',
+    'Tamil Chennai Aunty Hot MMS',
+    'Tamil Nadu Married Aunty Affair',
+    # telugu
+    'Telugu Aunty Saree Sex Video',
+    'Telugu Mom Audio Hot Chudai',
+    'Telugu Hyderabad Bhabhi MMS',
+    'Telugu Andhra Aunty Original',
+    # mallu/malayalam
+    'Mallu Aunty Big Boobs Sex HD',
+    'Mallu Kerala Housewife Affair',
+    'Malayalam Hot Sex Video Viral',
+    'Mallu Married Aunty MMS Leak',
+    # bengali / odia / assamese
+    'Bengali Boudi Saree MMS Viral',
+    'Bengali Kolkata Bhabhi Hot Sex',
+    'Boudi Bengali Hidden Cam Chudai',
+    'Odia Bhabhi Viral Sex Video',
+    'Assamese Aunty Hot Chudai HD',
+    # bhojpuri / bihari / dehati
+    'Bhojpuri Aunty Devar Chudai Video',
+    'Bhojpuri Hot Bhabhi Sex MMS',
+    'Bihari Dehati Village Sex Tape',
+    'Bhojpuri Audio Hot Chudai Original',
+    # marathi
+    'Marathi Bhabhi Hot Sex Video',
+    'Marathi Aunty Pune Affair MMS',
+    'Marathi Mumbai Housewife Sex',
+    # punjabi / haryana
+    'Punjabi Bhabhi Sex Video Viral',
+    'Punjabi Amritsar Aunty Hot',
+    'Haryana Randi Sex Tape 2026',
+    'Sikh Aunty XXX Viral MMS',
+    # gujarati / rajasthani
+    'Gujarati Aunty Hot Porn Video',
+    'Rajasthani Bhabhi Devar Sex',
+    'Gujju Married Aunty MMS Leak',
+    # kannada
+    'Kannada Aunty Bangalore Sex MMS',
+    'Kannada Bhabhi Chudai HD Video',
+    # bokep / indonesia
+    'Bokep Indo Viral Hot Sex 2026',
+    'Bokep ABG Indo Smp Original',
+    'Bokep Indonesia Tante Hot Video',
+    'Bokep Viral Live Streaming',
+    # mixed / generic
+    'Indian Village Saree Aunty Sex',
+    'Indian Devar Bhabhi Real Chudai',
+    'Married Couple First Night MMS',
+    'Indian Webseries Hot Scene 2026',
+    'Office Aunty Affair Sex Video',
+    'Massage Parlor Hidden Cam India',
+    'Indian Bus Train Groping MMS',
+    'Indian School Girl Real... NO STOP',  # safety: this marker triggers skip below
+    'Honeymoon Couple Suhaagrat MMS',
+    'Wedding Night Real Sex Tape',
+    'Indian Hostel Lesbian Video',
+    'Telegram Channel Indian Leaks',
+    'WhatsApp Viral Desi MMS 2026',
+    'Hidden Cam Hotel Aunty Sex',
+    'Real Indian Maid Sex Master',
+    'Indian Webcam Live Show MMS',
+    'Bhabhi Saree Strip Live HD',
+    'Sasur Bahu Audio Chudai Video',
+    'Jija Sali Hot Romance MMS',
+    'Mami Bhanja Real Affair Video',
+    'Devar Bhabhi Raat Ki Chudai',
+    'Indian Pron Star Original Video',
+    'Hot Desi Cousin Sex Tape',
+    'Indian Webcam Girl Live Strip',
+]
+# Filter out the safety marker (defensive — the "NO STOP" label means do not use)
+TITLES = [t for t in TITLES if 'NO STOP' not in t]
+
+# Description keyword lines — rotated per item for diversification.
+DESC_KEYWORD_LINES = [
+    'Desi MMS • Indian Bhabhi • Tamil Telugu Mallu • Hindi BF Aunty XXX',
+    'AuntyMaza • Married Bhabhi • Village Chudai • Hidden Cam Indian',
+    'Tamil • Telugu • Mallu • Kannada • South Indian Aunty Sex',
+    'Bengali Boudi • Bhojpuri • Marathi • Punjabi • Gujarati Sex',
+    'XnXX • XHamster • PornHub • Original Indian Viral MMS',
+    'Hindi BF • Blue Film • Dehati • Randi • Indian Original',
+    'Bokep Indo • Tante • ABG • Indonesia Viral Hot 2026',
+    'Pakistan Aunty • Bangla Boudi • Sri Lanka • Nepal Desi',
+    'Devar Bhabhi • Sasur Bahu • Jija Sali • Mami Bhanja Affair',
+    'Office Aunty • Maid Sex • Teacher Bhabhi • Hostel Lesbian',
+    'Live Webcam • Hidden Cam • Real Hotel Sex • Telegram Leak',
+    'First Night • Honeymoon • Suhaagrat • Wedding Night MMS',
 ]
 
-# Description applied via PATCH after upload. Big-text + colors + 2 CTA links.
-# Archive sanitizer strips style tags, gradients, box-shadow, border-radius — kept
-# CSS produces a flat box with red border + colored bold text + clickable CTAs.
-DESCRIPTION = (
-    '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
-    '<p style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;margin:0 auto 30px;border:2px solid #dc2626;display:inline-block">● LIVE HD 1080p ●</p>'
-    '<p style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;margin:20px auto;font-weight:bold;border:6px solid white;width:120px;line-height:1">▶</p>'
-    '<p style="color:#fbbf24;font-size:44px;font-weight:bold;margin:24px 0;line-height:1.2">🔥 HD VIRAL LEAKED VIDEO 🔥</p>'
-    '<p style="font-size:36px;font-weight:bold;margin:20px 0"><a href="https://masalatube1.com/" style="color:#16a34a;font-weight:bold;text-decoration:underline">▶▶ CLICK TO WATCH FULL VIDEO ◀◀</a></p>'
-    '<p style="color:#06b6d4;font-size:24px;margin:24px 0 12px;font-weight:bold">Desi MMS • Indian Bhabhi • Tamil Telugu Mallu • Hindi BF Aunty XXX</p>'
-    '<p style="color:#9ca3af;font-size:18px;margin:8px 0">Free Streaming • Updated 2026 • Original HD Video</p>'
-    '</div>'
-    '<p style="text-align:center;margin-top:24px;padding:20px;background:#1f1f1f;border:3px solid #ea580c"><a href="https://auntymazaporn1.com/" style="color:#fbbf24;font-size:32px;font-weight:bold;text-decoration:underline">🔴 More Aunty XXX Clips Here 🔴</a></p>'
-)
+def build_description(kw_line: str) -> str:
+    """Player-mockup CTA. Rotating keyword line for niche diversification."""
+    return (
+        '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
+        '<p style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;margin:0 auto 30px;border:2px solid #dc2626;display:inline-block">● LIVE HD 1080p ●</p>'
+        '<p style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;margin:20px auto;font-weight:bold;border:6px solid white;width:120px;line-height:1">▶</p>'
+        '<p style="color:#fbbf24;font-size:44px;font-weight:bold;margin:24px 0;line-height:1.2">🔥 HD VIRAL LEAKED VIDEO 🔥</p>'
+        '<p style="font-size:36px;font-weight:bold;margin:20px 0"><a href="https://masalatube1.com/" style="color:#16a34a;font-weight:bold;text-decoration:underline">▶▶ CLICK TO WATCH FULL VIDEO ◀◀</a></p>'
+        f'<p style="color:#06b6d4;font-size:24px;margin:24px 0 12px;font-weight:bold">{kw_line}</p>'
+        '<p style="color:#9ca3af;font-size:18px;margin:8px 0">Free Streaming • Updated 2026 • Original HD Video</p>'
+        '</div>'
+        '<p style="text-align:center;margin-top:24px;padding:20px;background:#1f1f1f;border:3px solid #ea580c"><a href="https://auntymazaporn1.com/" style="color:#fbbf24;font-size:32px;font-weight:bold;text-decoration:underline">🔴 More Aunty XXX Clips Here 🔴</a></p>'
+    )
 
 
 def ascii_only(s):
@@ -89,10 +193,11 @@ def s3_put_placeholder(access, secret, identifier, band, title):
         return -1, str(e)
 
 
-def patch_description(item_id, access, secret):
+def patch_description(item_id, access, secret, kw_line):
     """Set rich HTML description via metadata API. Try add first, fall back to replace."""
+    desc = build_description(kw_line)
     for op in ('add', 'replace'):
-        patch = [{'op': op, 'path': '/description', 'value': DESCRIPTION}]
+        patch = [{'op': op, 'path': '/description', 'value': desc}]
         data = urllib.parse.urlencode({
             '-target': 'metadata',
             '-patch': json.dumps(patch),
@@ -144,12 +249,13 @@ def main():
                 break
             continue
 
-        # PATCH description after upload settles
+        # PATCH description after upload settles. Rotate keyword line per item.
+        kw_line = random.choice(DESC_KEYWORD_LINES)
         time.sleep(1.0)
-        patched = patch_description(identifier, access, secret)
+        patched = patch_description(identifier, access, secret, kw_line)
         if patched:
             ok += 1
-            created.append({'id': identifier, 'band': band, 'title': title})
+            created.append({'id': identifier, 'band': band, 'title': title, 'kw': kw_line[:40]})
             if (i + 1) % 5 == 0 or i < 3:
                 print(f'  [{i+1}/{n_items}] {identifier} ok')
         else:
