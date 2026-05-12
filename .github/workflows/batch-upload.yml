@@ -180,14 +180,60 @@ jobs:
           print(f'merged {merged} results; total items={len(state["items"])}; used_tags={len(state["used_tags"])}')
           PY
 
-      - name: Commit state.json
+      - name: Commit state.json (with rebase-retry for parallel runs)
         run: |
           git config user.name  "iontube-bot"
           git config user.email "iontube@noreply.github.com"
           git add state.json
           if git diff --cached --quiet; then
             echo "no state changes"
-          else
-            git commit -m "state: after batch run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            git push
+            exit 0
           fi
+          git commit -m "state: after batch run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Retry up to 6 times on push reject (parallel commit-state jobs race)
+          for i in 1 2 3 4 5 6; do
+            if git push; then
+              echo "push ok on attempt $i"
+              exit 0
+            fi
+            echo "push rejected, attempt $i — rebase + re-merge state and retry..."
+            git fetch origin main
+            # Rebase current commit onto fetched main, then re-apply our state changes
+            # by re-running the merge step.
+            git reset --hard origin/main
+            python3 << 'PY'
+          import json, os, glob, time
+          state = json.load(open('state.json')) if os.path.exists('state.json') else {
+            'used_tags': [], 'run_count': 0, 'items': [], 'acct_stats': {}
+          }
+          merged = 0
+          for f in sorted(glob.glob('/tmp/all_results/**/*.json', recursive=True)):
+              try: r = json.load(open(f))
+              except: continue
+              if not r.get('ok'): continue
+              state['used_tags'].extend(r.get('tags_used', []))
+              state['items'].append({
+                  'id': r['item_id'], 'group': r['group'],
+                  'pdfs': r['ok'], 'uploaded': r['ok'],
+                  'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                  'per_acct': r.get('per_acct', {}),
+                  'details_url': r.get('details_url'),
+              })
+              for lbl, s in r.get('per_acct', {}).items():
+                  agg = state.setdefault('acct_stats', {}).setdefault(lbl, {'ok': 0, 'fail': 0})
+                  agg['ok']   += s.get('ok', 0)
+                  agg['fail'] += s.get('fail', 0)
+              merged += 1
+          state['used_tags'] = list(dict.fromkeys(state['used_tags']))[-100000:]
+          state['items']     = state['items'][-3000:]
+          state['run_count'] = state.get('run_count', 0) + 1
+          state['last_run']  = time.strftime('%Y-%m-%d %H:%M:%S')
+          json.dump(state, open('state.json', 'w'), indent=2)
+          print(f're-merged {merged} results after rebase')
+          PY
+            git add state.json
+            git commit -m "state: after batch run $(date -u +%Y-%m-%dT%H:%M:%SZ) (retry $i)"
+            sleep $((i * 5))
+          done
+          echo "FAILED to push after 6 attempts"
+          exit 1
