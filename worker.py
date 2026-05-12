@@ -211,6 +211,7 @@ def s3_put_placeholder(access, secret, identifier, band, title):
 def patch_description(item_id, access, secret, kw_line, target_url, anchor):
     """Set rich HTML description via metadata API. Try add first, fall back to replace."""
     desc = build_description(kw_line, target_url, anchor)
+    last_err = None
     for op in ('add', 'replace'):
         patch = [{'op': op, 'path': '/description', 'value': desc}]
         data = urllib.parse.urlencode({
@@ -219,24 +220,30 @@ def patch_description(item_id, access, secret, kw_line, target_url, anchor):
             'access': access,
             'secret': secret,
         }).encode()
-        req = urllib.request.Request(f'https://archive.org/metadata/{item_id}', data=data)
+        req = urllib.request.Request(
+            f'https://archive.org/metadata/{item_id}',
+            data=data,
+            headers={'Content-Type': 'application/x-www-form-urlencoded'},
+            method='POST',
+        )
         try:
             r = urllib.request.urlopen(req, timeout=20).read().decode()
             obj = json.loads(r)
             if obj.get('success'):
-                return True
-            err = obj.get('error', '')
-            if 'exists' in err or 'not set' in err:
+                return True, None
+            last_err = obj.get('error', 'unknown')
+            if 'exists' in last_err or 'not set' in last_err:
                 continue
-            return False
+            return False, last_err
         except urllib.error.HTTPError as e:
+            last_err = f'HTTP {e.code}'
             if e.code in (400, 429):
                 time.sleep(2)
                 continue
-            return False
-        except Exception:
-            return False
-    return False
+            return False, last_err
+        except Exception as e:
+            return False, str(e)
+    return False, last_err
 
 
 def main():
