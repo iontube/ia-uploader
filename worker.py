@@ -22,122 +22,98 @@ ETREE_BANDS = [
 ]
 VENUES = ['gthrny','live-show','outdoor-fest','soundcheck','rehearsal','jam-session']
 
-TITLES = [
-    # auntymaza niche
-    'AuntyMaza Hot Porn Viral Sex Video HD',
-    'AuntyMaza Indian Bhabhi Aunty XXX Collection',
-    'AuntyMaza Married Aunty MMS Leaked',
-    'AuntyMaza Padosi Bhabhi Chudai Video',
-    'AuntyMaza Pakistani Aunty Sex HD',
-    # desimms niche
-    'Desi MMS Viral Leak HD Sex Videos',
-    'Desi MMS Hidden Cam Aunty Real',
-    'Desi MMS Village Bhabhi Original Video',
-    'Desi MMS Whatsapp Viral 2026',
-    'Desi MMS Bhabhi Devar Real Affair',
-    # hindi bf
-    'Hindi BF Porn Viral Collection 2026',
-    'Hindi BF Full HD Movie Sex',
-    'Hindi BF Audio Bhabhi Chudai',
-    'Hindi BF Dehati Randi Sex Video',
-    'Hindi BF Bollywood Style XXX',
-    # xnxx-india
-    'XnXX India Viral MMS Hot Sex Videos',
-    'XnXX Desi Aunty Bhabhi Original',
-    'XnXX Tamil Telugu Hot Sex Tape',
-    'XnXX Pakistani Indian Sex Compilation',
-    'XnXX Bollywood Actress Leaked',
-    # tamil
-    'Tamil Aunty Sex Video HD Viral',
-    'Tamil Mami Chudai Hidden Cam',
-    'Tamil Chennai Aunty Hot MMS',
-    'Tamil Nadu Married Aunty Affair',
-    # telugu
-    'Telugu Aunty Saree Sex Video',
-    'Telugu Mom Audio Hot Chudai',
-    'Telugu Hyderabad Bhabhi MMS',
-    'Telugu Andhra Aunty Original',
-    # mallu/malayalam
-    'Mallu Aunty Big Boobs Sex HD',
-    'Mallu Kerala Housewife Affair',
-    'Malayalam Hot Sex Video Viral',
-    'Mallu Married Aunty MMS Leak',
-    # bengali / odia / assamese
-    'Bengali Boudi Saree MMS Viral',
-    'Bengali Kolkata Bhabhi Hot Sex',
-    'Boudi Bengali Hidden Cam Chudai',
-    'Odia Bhabhi Viral Sex Video',
-    'Assamese Aunty Hot Chudai HD',
-    # bhojpuri / bihari / dehati
-    'Bhojpuri Aunty Devar Chudai Video',
-    'Bhojpuri Hot Bhabhi Sex MMS',
-    'Bihari Dehati Village Sex Tape',
-    'Bhojpuri Audio Hot Chudai Original',
-    # marathi
-    'Marathi Bhabhi Hot Sex Video',
-    'Marathi Aunty Pune Affair MMS',
-    'Marathi Mumbai Housewife Sex',
-    # punjabi / haryana
-    'Punjabi Bhabhi Sex Video Viral',
-    'Punjabi Amritsar Aunty Hot',
-    'Haryana Randi Sex Tape 2026',
-    'Sikh Aunty XXX Viral MMS',
-    # gujarati / rajasthani
-    'Gujarati Aunty Hot Porn Video',
-    'Rajasthani Bhabhi Devar Sex',
-    'Gujju Married Aunty MMS Leak',
-    # kannada
-    'Kannada Aunty Bangalore Sex MMS',
-    'Kannada Bhabhi Chudai HD Video',
-    # bokep / indonesia
-    'Bokep Indo Viral Hot Sex 2026',
-    'Bokep ABG Indo Smp Original',
-    'Bokep Indonesia Tante Hot Video',
-    'Bokep Viral Live Streaming',
-    # mixed / generic
-    'Indian Village Saree Aunty Sex',
-    'Indian Devar Bhabhi Real Chudai',
-    'Married Couple First Night MMS',
-    'Indian Webseries Hot Scene 2026',
-    'Office Aunty Affair Sex Video',
-    'Massage Parlor Hidden Cam India',
-    'Indian Bus Train Groping MMS',
-    'Indian School Girl Real... NO STOP',  # safety: this marker triggers skip below
-    'Honeymoon Couple Suhaagrat MMS',
-    'Wedding Night Real Sex Tape',
-    'Indian Hostel Lesbian Video',
-    'Telegram Channel Indian Leaks',
-    'WhatsApp Viral Desi MMS 2026',
-    'Hidden Cam Hotel Aunty Sex',
-    'Real Indian Maid Sex Master',
-    'Indian Webcam Live Show MMS',
-    'Bhabhi Saree Strip Live HD',
-    'Sasur Bahu Audio Chudai Video',
-    'Jija Sali Hot Romance MMS',
-    'Mami Bhanja Real Affair Video',
-    'Devar Bhabhi Raat Ki Chudai',
-    'Indian Pron Star Original Video',
-    'Hot Desi Cousin Sex Tape',
-    'Indian Webcam Girl Live Strip',
+# === Seed word pools — combinable into millions of unique titles/desc lines ===
+REGIONS = [
+    'Tamil', 'Telugu', 'Hindi', 'Bengali', 'Bhojpuri', 'Marathi', 'Marwadi',
+    'Mallu', 'Punjabi', 'Gujarati', 'Odia', 'Bihari', 'Kannada', 'Malayalam',
+    'Assamese', 'Dehati', 'Desi', 'Indian', 'South Indian', 'North Indian',
+    'Pakistani', 'Bangladeshi', 'Bangla', 'Nepali', 'Sri Lankan', 'Punjabi Sikh',
 ]
-# Filter out the safety marker (defensive — the "NO STOP" label means do not use)
-TITLES = [t for t in TITLES if 'NO STOP' not in t]
 
-# Description keyword lines — rotated per item for diversification.
-DESC_KEYWORD_LINES = [
-    'Desi MMS • Indian Bhabhi • Tamil Telugu Mallu • Hindi BF Aunty XXX',
-    'AuntyMaza • Married Bhabhi • Village Chudai • Hidden Cam Indian',
-    'Tamil • Telugu • Mallu • Kannada • South Indian Aunty Sex',
-    'Bengali Boudi • Bhojpuri • Marathi • Punjabi • Gujarati Sex',
-    'XnXX • XHamster • PornHub • Original Indian Viral MMS',
-    'Hindi BF • Blue Film • Dehati • Randi • Indian Original',
-    'Bokep Indo • Tante • ABG • Indonesia Viral Hot 2026',
-    'Pakistan Aunty • Bangla Boudi • Sri Lanka • Nepal Desi',
-    'Devar Bhabhi • Sasur Bahu • Jija Sali • Mami Bhanja Affair',
-    'Office Aunty • Maid Sex • Teacher Bhabhi • Hostel Lesbian',
-    'Live Webcam • Hidden Cam • Real Hotel Sex • Telegram Leak',
-    'First Night • Honeymoon • Suhaagrat • Wedding Night MMS',
+CATEGORIES = [
+    'Bhabhi', 'Aunty', 'Devar Bhabhi', 'Padosi Bhabhi', 'Mami', 'Mousi', 'Masi',
+    'Boudi', 'Sasur Bahu', 'Jija Sali', 'Maid', 'Teacher', 'School Girl',
+    'College Girl', 'Hostel Girl', 'Heroine', 'Actress', 'Married Aunty',
+    'Housewife', 'Mami Bhanja', 'Cousin', 'Step Sister', 'Saali', 'Randi',
+    'Office Aunty', 'Working Bhabhi', 'Saree Aunty', 'Big Boobs Aunty',
+    'Hot Bhabhi', 'Married Bhabhi', 'Village Bhabhi', 'Tante', 'ABG',
 ]
+
+SCENES = [
+    'MMS', 'Sex Video', 'Chudai', 'Blue Film', 'BF', 'Caught', 'Leaked', 'Viral',
+    'Real', 'Original', 'Hidden Cam', 'Live Cam', 'Webcam', 'Hotel Sex',
+    'Bedroom Sex', 'Bathroom Sex', 'Outdoor Sex', 'Jungle Sex', 'Car Sex',
+    'Office Sex', 'Hostel Sex', 'Reels', 'Viral Kand', 'Live Streaming',
+    'Audio Sex', 'Hot Affair', 'Cheating', 'Romance', 'XXX', 'Sex Tape',
+    'Strip', 'Suhaagrat', 'First Night', 'Honeymoon', 'Wedding Night',
+    'Massage Parlor', 'Bus Groping', 'Train Sex', 'Telegram Leak',
+    'WhatsApp Viral', 'Insta Reels', 'Live Show', 'Big Boobs Show',
+]
+
+QUALITIES = [
+    'HD', '4K', '1080p', '720p', 'Uncut', 'Full HD', 'Full Length',
+    'Latest', 'New', '2026', 'Premium', 'Mega Pack', 'Collection',
+]
+
+BRANDS = [
+    'AuntyMaza', 'MmsMaza', 'FsiBlog', 'Masahub', 'Desihub', 'Webxmaza',
+    'Aagmaal', 'Hindibfvideo', 'Mydesi', 'Desi49', 'Mmstown', 'Mmsdose',
+    'UlluUncut', 'Webmaal', 'Uncutmaza', 'Uncutmasti', 'Antarvasna', 'Rajwap',
+    'Mastibaba', 'Dropmms', 'Xmaza', 'Lol49', 'Xmasti', 'Desitales',
+    'Xhamster', 'Xhamster19', 'XnXX', 'XnXX2', 'PornHub', 'Spankbang',
+    'Faphouse', 'Redwap', 'Eporner', 'Xhopen', 'Theporndude', 'Masa49',
+    'Masafun', 'Kamababa', 'Fry99', 'Desikahani', 'DesiPorn', 'Desileak',
+    'Deephot', 'Desifile', 'XnXXVideos', 'VdsBlog', 'Tamilsexzone',
+    'Thehappycenter', 'Masalaseen', 'Dinotube', 'Sexvid',
+]
+
+LOCATIONS = [
+    'Delhi', 'Mumbai', 'Kolkata', 'Chennai', 'Bangalore', 'Hyderabad', 'Pune',
+    'Ahmedabad', 'Lucknow', 'Patna', 'Jaipur', 'Surat', 'Kanpur',
+    'GB Road', 'Sonagachi', 'MG Road', 'Red Light Area', 'Chandni Chowk',
+    'Karol Bagh', 'Andheri', 'Bandra', 'Connaught Place',
+]
+
+
+def _r(pool):
+    return random.choice(pool)
+
+
+# Title pattern functions — each returns a unique combination. Picked at random per item.
+def _t1(): return f'{_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t2(): return f'{_r(REGIONS)} {_r(SCENES)} {_r(QUALITIES)}'
+def _t3(): return f'{_r(QUALITIES)} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t4(): return f'{_r(BRANDS)} {_r(REGIONS)} {_r(SCENES)}'
+def _t5(): return f'{_r(BRANDS)} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
+def _t6(): return f'{_r(LOCATIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t7(): return f'{_r(LOCATIONS)} {_r(CATEGORIES)} Caught {_r(SCENES)}'
+def _t8(): return f'{_r(REGIONS)} {_r(CATEGORIES)} Viral Kand {_r(QUALITIES)}'
+def _t9(): return f'{_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)} 2026'
+def _t10(): return f'{_r(BRANDS)} {_r(REGIONS)} {_r(CATEGORIES)} {_r(QUALITIES)}'
+def _t11(): return f'Hot {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
+def _t12(): return f'{_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} - {_r(BRANDS)}'
+def _t13(): return f'{_r(QUALITIES)} {_r(BRANDS)} {_r(SCENES)} {_r(REGIONS)}'
+def _t14(): return f'{_r(REGIONS)} {_r(CATEGORIES)} Affair {_r(SCENES)} HD'
+def _t15(): return f'New {_r(REGIONS)} {_r(SCENES)} {_r(QUALITIES)} {_r(BRANDS)}'
+
+_TITLE_FNS = [_t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10, _t11, _t12, _t13, _t14, _t15]
+
+
+def gen_title():
+    return random.choice(_TITLE_FNS)()
+
+
+def gen_kw_line():
+    """5-7 tags mixing all seed pools, joined with ' • '."""
+    pool = []
+    pool += random.sample(REGIONS, k=2)
+    pool += random.sample(CATEGORIES, k=2)
+    pool += [_r(SCENES)]
+    pool += [_r(BRANDS)]
+    if random.random() < 0.5:
+        pool += [_r(LOCATIONS)]
+    random.shuffle(pool)
+    return ' • '.join(pool)
 
 # 3 money sites — rotated per item; each /details/ has ONE link in the player (no secondary).
 TARGET_URLS = [
@@ -178,6 +154,8 @@ def ascii_only(s):
 def s3_put_placeholder(access, secret, identifier, band, title):
     """Create item with minimal placeholder file + metadata."""
     venue = random.choice(VENUES)
+    today = time.strftime('%Y-%m-%d')
+    year = time.strftime('%Y')
     headers = {
         'Authorization':                f'LOW {access}:{secret}',
         'Content-Type':                 'text/plain',
@@ -189,9 +167,9 @@ def s3_put_placeholder(access, secret, identifier, band, title):
         'x-archive-meta02-collection':  'etree',
         'x-archive-meta01-creator':     band,
         'x-archive-meta01-title':       ascii_only(title),
-        'x-archive-meta01-date':        '2026-05-12',
+        'x-archive-meta01-date':        today,
         'x-archive-meta01-venue':       venue,
-        'x-archive-meta01-year':        '2026',
+        'x-archive-meta01-year':        year,
         'x-archive-meta01-subject':     'Live concert',
         'x-archive-meta01-language':    'eng',
         'x-archive-meta01-scanner':     'Internet Archive HTML5 Uploader 1.7.0',
@@ -260,9 +238,10 @@ def main():
     created = []
     for i in range(n_items):
         band = random.choice(ETREE_BANDS)
-        title = f'{random.choice(TITLES)} {random.randint(100, 999)}'
+        title = f'{gen_title()} {random.randint(100, 999)}'
         suffix = f'{label}-{int(time.time())%100000}-{random.randint(100, 9999)}'
-        identifier = f'{band}2026-05-12.{suffix}'
+        today = time.strftime('%Y-%m-%d')
+        identifier = f'{band}{today}.{suffix}'
 
         code, body = s3_put_placeholder(access, secret, identifier, band, title)
         if code not in (200, 201):
@@ -274,7 +253,7 @@ def main():
             continue
 
         # PATCH description after upload settles. Rotate keyword line + target per item.
-        kw_line = random.choice(DESC_KEYWORD_LINES)
+        kw_line = gen_kw_line()
         target_url = random.choice(TARGET_URLS)
         anchor = random.choice(PRIMARY_ANCHORS)
         time.sleep(2.0)
