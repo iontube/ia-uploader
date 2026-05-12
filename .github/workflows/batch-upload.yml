@@ -36,23 +36,20 @@ jobs:
         id: state
         run: |
           if [ -f state.json ]; then
-            USED=$(python3 -c "import json; print(json.dumps(json.load(open('state.json'))['used_tags']))")
+            python3 -c "import json; json.dump(json.load(open('state.json')).get('used_tags', []), open('/tmp/used_tags.json','w'))"
           else
-            USED='[]'
+            echo '[]' > /tmp/used_tags.json
           fi
-          echo "USED_TAGS_LEN=$(python3 -c "import json,os; print(len(json.loads(os.environ['U'])))" U="$USED")" >> $GITHUB_ENV
-          # Write to a file (env var would be too big for 6900+ tags)
-          echo "$USED" > /tmp/used_tags.json
+          echo "USED_TAGS_LEN=$(python3 -c "import json; print(len(json.load(open('/tmp/used_tags.json'))))")" >> $GITHUB_ENV
 
       - name: Resolve account + group from matrix idx
         id: acct
         env:
           IDX: ${{ matrix.idx }}
         run: |
-          # Group cycle similar to original — distinct per matrix slot to reduce tag collisions
-          GROUPS=(desi auntymaza xnxx india hindibf desi)
-          echo "GROUP=${GROUPS[$IDX]}" >> $GITHUB_ENV
-          # Account label by index — must match secret naming
+          # Group cycle per matrix slot. Named GROUP_CYCLE because $GROUPS is a bash builtin (user GIDs).
+          GROUP_CYCLE=(desi auntymaza xnxx india hindibf desi)
+          echo "GROUP=${GROUP_CYCLE[$IDX]}" >> $GITHUB_ENV
           LABELS=(acct1 acct2 acct3 acct4 acct5 acct6)
           echo "ACCOUNT_LABEL=${LABELS[$IDX]}" >> $GITHUB_ENV
 
@@ -104,7 +101,7 @@ jobs:
           cp /tmp/used_tags.json /tmp/used_current.json
           for R in $(seq 1 "$ROUNDS"); do
             echo "============ ROUND $R / $ROUNDS (matrix idx=$MATRIX_IDX) ============"
-            STATE_USED_TAGS_JSON="$(cat /tmp/used_current.json)" \
+            STATE_USED_TAGS_FILE=/tmp/used_current.json \
               GROUP="$GROUP" \
               ACCOUNT_LABEL="$ACCOUNT_LABEL" \
               python3 worker.py || true

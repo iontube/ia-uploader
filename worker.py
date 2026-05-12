@@ -88,7 +88,11 @@ def main():
     label   = os.environ.get('ACCOUNT_LABEL', 'unknown')
     n_pdfs  = int(os.environ.get('PDFS_PER_ITEM', '100'))
     tagsf   = os.environ.get('TAGS_FILE', 'all_tags.txt')
-    used    = json.loads(os.environ.get('STATE_USED_TAGS_JSON', '[]'))
+    used_file = os.environ.get('STATE_USED_TAGS_FILE', '')
+    if used_file and os.path.exists(used_file):
+        used = json.load(open(used_file))
+    else:
+        used = json.loads(os.environ.get('STATE_USED_TAGS_JSON', '[]'))
     group   = os.environ.get('GROUP', 'desi')
 
     used_set = set(used)
