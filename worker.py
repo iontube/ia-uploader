@@ -156,15 +156,17 @@ PRIMARY_ANCHORS = [
 
 
 def build_description(kw_line: str, target_url: str, anchor: str) -> str:
-    """Player-mockup CTA. Single link in description, rotating per item across 3 money sites."""
+    """Player-mockup CTA. Every text element wrapped in <a> so entire player is clickable
+    (sanitizer-friendly — flat anchors, no nested-wrap rewriting)."""
+    t = target_url  # short alias
     return (
         '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
-        '<p style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;margin:0 auto 30px;border:2px solid #dc2626;display:inline-block">● LIVE HD 1080p ●</p>'
-        '<p style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;margin:20px auto;font-weight:bold;border:6px solid white;width:120px;line-height:1">▶</p>'
-        '<p style="color:#fbbf24;font-size:44px;font-weight:bold;margin:24px 0;line-height:1.2">🔥 HD VIRAL LEAKED VIDEO 🔥</p>'
-        f'<p style="font-size:36px;font-weight:bold;margin:20px 0"><a href="{target_url}" style="color:#16a34a;font-weight:bold;text-decoration:underline">{anchor}</a></p>'
-        f'<p style="color:#06b6d4;font-size:24px;margin:24px 0 12px;font-weight:bold">{kw_line}</p>'
-        '<p style="color:#9ca3af;font-size:18px;margin:8px 0">Free Streaming • Updated 2026 • Original HD Video</p>'
+        f'<p style="margin:0 auto 30px"><a href="{t}" style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid #dc2626;text-decoration:none">● LIVE HD 1080p ●</a></p>'
+        f'<p style="margin:20px auto"><a href="{t}" style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;font-weight:bold;border:6px solid white;text-decoration:none">▶</a></p>'
+        f'<p style="margin:24px 0"><a href="{t}" style="color:#fbbf24;font-size:44px;font-weight:bold;text-decoration:none">🔥 HD VIRAL LEAKED VIDEO 🔥</a></p>'
+        f'<p style="margin:20px 0"><a href="{t}" style="color:#16a34a;font-size:36px;font-weight:bold;text-decoration:underline">{anchor}</a></p>'
+        f'<p style="margin:24px 0 12px"><a href="{t}" style="color:#06b6d4;font-size:24px;font-weight:bold;text-decoration:none">{kw_line}</a></p>'
+        f'<p style="margin:8px 0"><a href="{t}" style="color:#9ca3af;font-size:18px;text-decoration:none">Free Streaming • Updated 2026 • Original HD Video</a></p>'
         '</div>'
     )
 
