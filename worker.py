@@ -176,53 +176,69 @@ def s3_put_placeholder(access, secret, identifier, band, title):
     }
     body = b'live show notes\n'
     url = f'https://s3.us.archive.org/{identifier}/notes.txt'
-    req = urllib.request.Request(url, data=body, method='PUT')
-    for k, v in headers.items():
-        req.add_header(k, v)
-    try:
-        r = urllib.request.urlopen(req, timeout=60)
-        return r.status, ''
-    except urllib.error.HTTPError as e:
-        return e.code, e.read().decode('utf-8', 'ignore')[:200]
-    except Exception as e:
-        return -1, str(e)
+    # Retry on 503 (rate-limited) with backoff. 401/403 = banned, return immediately.
+    last_code, last_body = -1, ''
+    for attempt in range(3):
+        req = urllib.request.Request(url, data=body, method='PUT')
+        for k, v in headers.items():
+            req.add_header(k, v)
+        try:
+            r = urllib.request.urlopen(req, timeout=60)
+            return r.status, ''
+        except urllib.error.HTTPError as e:
+            last_code, last_body = e.code, e.read().decode('utf-8', 'ignore')[:200]
+            if e.code in (401, 403):
+                return last_code, last_body
+            if e.code in (503, 429, 500, 502, 504):
+                time.sleep(5 * (2 ** attempt))  # 5s, 10s, 20s
+                continue
+            return last_code, last_body
+        except Exception as e:
+            last_code, last_body = -1, str(e)
+            time.sleep(5)
+    return last_code, last_body
 
 
 def patch_description(item_id, access, secret, kw_line, target_url, anchor):
-    """Set rich HTML description via metadata API. Try add first, fall back to replace."""
+    """Set rich HTML description via metadata API.
+    Brand-new buckets race-condition: metadata not ready for ~5-10s after PUT, returns
+    400. Retry with progressive backoff (3s, 6s, 12s) and toggle add/replace ops.
+    """
     desc = build_description(kw_line, target_url, anchor)
     last_err = None
-    for op in ('add', 'replace'):
-        patch = [{'op': op, 'path': '/description', 'value': desc}]
-        data = urllib.parse.urlencode({
-            '-target': 'metadata',
-            '-patch': json.dumps(patch),
-            'access': access,
-            'secret': secret,
-        }).encode()
-        req = urllib.request.Request(
-            f'https://archive.org/metadata/{item_id}',
-            data=data,
-            headers={'Content-Type': 'application/x-www-form-urlencoded'},
-            method='POST',
-        )
-        try:
-            r = urllib.request.urlopen(req, timeout=20).read().decode()
-            obj = json.loads(r)
-            if obj.get('success'):
-                return True, None
-            last_err = obj.get('error', 'unknown')
-            if 'exists' in last_err or 'not set' in last_err:
-                continue
-            return False, last_err
-        except urllib.error.HTTPError as e:
-            last_err = f'HTTP {e.code}'
-            if e.code in (400, 429):
-                time.sleep(2)
-                continue
-            return False, last_err
-        except Exception as e:
-            return False, str(e)
+    for attempt in range(3):
+        for op in ('add', 'replace'):
+            patch = [{'op': op, 'path': '/description', 'value': desc}]
+            data = urllib.parse.urlencode({
+                '-target': 'metadata',
+                '-patch': json.dumps(patch),
+                'access': access,
+                'secret': secret,
+            }).encode()
+            req = urllib.request.Request(
+                f'https://archive.org/metadata/{item_id}',
+                data=data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                method='POST',
+            )
+            try:
+                r = urllib.request.urlopen(req, timeout=20).read().decode()
+                obj = json.loads(r)
+                if obj.get('success'):
+                    return True, None
+                last_err = obj.get('error', 'unknown')
+                if 'exists' in last_err or 'not set' in last_err:
+                    continue
+                break  # other JSON-level error, try next attempt with backoff
+            except urllib.error.HTTPError as e:
+                last_err = f'HTTP {e.code}'
+                if e.code in (400, 429, 503):
+                    break  # retry with backoff
+                return False, last_err
+            except Exception as e:
+                last_err = str(e)
+                break
+        time.sleep(3 * (2 ** attempt))  # 3s, 6s, 12s
     return False, last_err
 
 
@@ -253,10 +269,11 @@ def main():
             continue
 
         # PATCH description after upload settles. Rotate keyword line + target per item.
+        # Sleep 6s — fresh bucket metadata isn't queryable for ~5-10s after PUT (race → 400).
         kw_line = gen_kw_line()
         target_url = random.choice(TARGET_URLS)
         anchor = random.choice(PRIMARY_ANCHORS)
-        time.sleep(2.0)
+        time.sleep(6.0)
         patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
         if patched:
             ok += 1
