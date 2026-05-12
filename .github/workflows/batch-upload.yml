@@ -1,15 +1,11 @@
-name: Batch IA Upload (6 accounts × N items)
+name: Batch IA stub items (no PDFs)
 on:
   workflow_dispatch:
     inputs:
-      pdfs_per_item:
-        description: "PDFs per item"
+      items_per_run:
+        description: "Items per account per run (no PDFs — just /details/ stubs)"
         required: true
-        default: "100"
-      rounds:
-        description: "Rounds per account (each round = 1 item)"
-        required: true
-        default: "1"
+        default: "30"
 
 # Allow parallel runs — each gets unique concurrency group via run_id.
 # Concurrent runs hit same 6 accounts; 0.8s sleep per upload keeps per-account QPS low.
@@ -28,21 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install deps
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq fonts-symbola
-          pip install --quiet reportlab requests
-
-      - name: Read state (used_tags)
-        id: state
-        run: |
-          if [ -f state.json ]; then
-            python3 -c "import json; json.dump(json.load(open('state.json')).get('used_tags', []), open('/tmp/used_tags.json','w'))"
-          else
-            echo '[]' > /tmp/used_tags.json
-          fi
-          echo "USED_TAGS_LEN=$(python3 -c "import json; print(len(json.load(open('/tmp/used_tags.json'))))")" >> $GITHUB_ENV
+      - name: (no extra deps — pure stdlib worker)
+        run: echo "stub-items worker uses only urllib"
 
       - name: Resolve account + group from matrix idx
         id: acct
@@ -92,31 +75,18 @@ jobs:
             echo "EOF"
           } >> $GITHUB_ENV
 
-      - name: Run rounds
+      - name: Run worker
         env:
-          PDFS_PER_ITEM: ${{ inputs.pdfs_per_item }}
-          ROUNDS: ${{ inputs.rounds }}
-          TAGS_FILE: all_tags.txt
+          ITEMS_PER_RUN: ${{ inputs.items_per_run }}
           MATRIX_IDX: ${{ matrix.idx }}
         run: |
           mkdir -p /tmp/results
-          cp /tmp/used_tags.json /tmp/used_current.json
-          for R in $(seq 1 "$ROUNDS"); do
-            echo "============ ROUND $R / $ROUNDS (matrix idx=$MATRIX_IDX) ============"
-            STATE_USED_TAGS_FILE=/tmp/used_current.json \
-              GROUP="$GROUP" \
-              ACCOUNT_LABEL="$ACCOUNT_LABEL" \
-              python3 worker.py || true
-            if [ -f /tmp/result.json ]; then
-              cp /tmp/result.json "/tmp/results/r${R}_idx${MATRIX_IDX}.json"
-              python3 merge_used.py /tmp/used_current.json /tmp/result.json /tmp/used_current.json
-              BANNED=$(python3 -c "import json; print(json.load(open('/tmp/result.json')).get('banned'))")
-              if [ "$BANNED" = "True" ]; then
-                echo "ACCOUNT BANNED — stopping further rounds for this idx"
-                break
-              fi
-            fi
-          done
+          GROUP="$GROUP" \
+            ACCOUNT_LABEL="$ACCOUNT_LABEL" \
+            python3 worker.py || true
+          if [ -f /tmp/result.json ]; then
+            cp /tmp/result.json "/tmp/results/idx${MATRIX_IDX}.json"
+          fi
 
       - name: Upload result artifacts
         if: always()
@@ -142,43 +112,7 @@ jobs:
           path: /tmp/all_results
 
       - name: Merge results into state.json
-        run: |
-          python3 << 'PY'
-          import json, os, glob, time
-          state = json.load(open('state.json')) if os.path.exists('state.json') else {
-            'used_tags': [], 'run_count': 0, 'items': [], 'acct_stats': {}
-          }
-          merged = 0
-          for f in sorted(glob.glob('/tmp/all_results/**/*.json', recursive=True)):
-              try:
-                  r = json.load(open(f))
-              except:
-                  continue
-              if not r.get('ok'):
-                  continue
-              state['used_tags'].extend(r.get('tags_used', []))
-              state['items'].append({
-                  'id': r['item_id'],
-                  'group': r['group'],
-                  'pdfs': r['ok'],
-                  'uploaded': r['ok'],
-                  'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
-                  'per_acct': r.get('per_acct', {}),
-                  'details_url': r.get('details_url'),
-              })
-              for lbl, s in r.get('per_acct', {}).items():
-                  agg = state.setdefault('acct_stats', {}).setdefault(lbl, {'ok': 0, 'fail': 0})
-                  agg['ok']   += s.get('ok', 0)
-                  agg['fail'] += s.get('fail', 0)
-              merged += 1
-          # Dedup + cap
-          state['used_tags'] = list(dict.fromkeys(state['used_tags']))[-100000:]
-          state['items']     = state['items'][-3000:]
-          state['run_count'] = state.get('run_count', 0) + 1
-          state['last_run']  = time.strftime('%Y-%m-%d %H:%M:%S')
-          json.dump(state, open('state.json', 'w'), indent=2)
-          print(f'merged {merged} results; total items={len(state["items"])}; used_tags={len(state["used_tags"])}')
-          PY
+        run: python3 merge_state.py /tmp/all_results state.json
 
       - name: Commit state.json (with rebase-retry for parallel runs)
         run: |
