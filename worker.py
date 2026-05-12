@@ -29,6 +29,19 @@ BAD = ['child','children','kid','baby','infant','minor','underage','pedo','prete
 ID_BASES = ['viral-hot-sex-videos','desi-mms-viral-2026','indian-bhabhi-aunty-sex','hindi-bf-porn-collection','xnxx-india-viral-mms','auntymaza-hot-porn','bokep-indo-viral','tamil-telugu-mallu-sex','desi-village-aunty-mms','viral-leaked-sex-videos','desi-hindi-bf-collection','indian-aunty-bhabhi-mms']
 TITLES   = ['Viral Hot Sex Videos 2026 Collection','Desi MMS Viral Leak HD Sex Videos','Indian Bhabhi Aunty Hot Sex Video XXX HD','Hindi BF Porn Viral Collection 2026','XnXX India Viral MMS Hot Sex Videos','AuntyMaza Hot Porn Viral Sex Video HD','Tamil Telugu Mallu Sex Viral Video HD','Desi Village Aunty MMS Viral Sex HD','Viral Leaked Sex Videos Indian Hot 2026']
 
+# etree real-band pool. Confirmed accepted via S3 PUT 2026-05-12. Add more from
+# archive.org/details/etree if rotation needs growing.
+ETREE_BANDS = [
+    'Strangefolk',
+    'AcidMothersTemple',
+    'WidespreadPanic',
+    'BirthMusic',
+    'BenTraverse',
+    'TheTravelinKine',
+]
+# Plausible venue names (gibberish enough to not collide with real shows).
+VENUES = ['gthrny','live-show','outdoor-fest','soundcheck','rehearsal','jam-session']
+
 
 def is_safe(t):
     if re.search(r'[0-9]', t): return False
@@ -70,15 +83,22 @@ def s3_put(access, secret, identifier, pdf_path, name, meta_headers=None):
     return r.status_code, len(data), r.text[:200]
 
 
-def build_meta(title):
+def build_meta(title, band):
+    """etree-mediatype metadata. /details/ is indexable when collection=[band, etree]."""
+    venue = random.choice(VENUES)
     return {
-        'x-archive-auto-make-bucket': '1',
-        'x-archive-meta01-mediatype': 'texts',
-        'x-archive-meta01-collection': 'opensource',
+        'x-archive-auto-make-bucket':   '1',
+        'x-archive-meta01-mediatype':   'etree',
+        'x-archive-meta01-collection':  band,
+        'x-archive-meta02-collection':  'etree',
+        'x-archive-meta01-creator':     band,
         'x-archive-meta01-title':       ascii_only(title),
-        'x-archive-meta01-description': 'asd',
-        'x-archive-meta01-subject':     'vv',
+        'x-archive-meta01-date':        '2026-05-12',
+        'x-archive-meta01-venue':       venue,
+        'x-archive-meta01-year':        '2026',
+        'x-archive-meta01-subject':     'Live concert',
         'x-archive-meta01-language':    'eng',
+        'x-archive-meta01-scanner':     'Internet Archive HTML5 Uploader 1.7.0',
     }
 
 
@@ -104,9 +124,12 @@ def main():
         json.dump({'ok': 0, 'item_id': None, 'group': group, 'tags_used': [], 'per_acct': {label: {'ok': 0, 'fail': 0}}, 'error': 'no_tags'}, open('/tmp/result.json', 'w'))
         return 1
 
-    identifier = f"{random.choice(ID_BASES)}-{random.randint(1000,9999)}"
+    # etree-style identifier: <Band><Date>.<RandomSuffix>
+    band = random.choice(ETREE_BANDS)
+    suffix = f"{label}-{random.randint(1000,9999)}"
+    identifier = f"{band}2026-05-12.{suffix}"
     title      = f"{random.choice(TITLES)} {random.randint(100,999)}"
-    print(f"[{label}] item={identifier} title={title!r} tags={len(tags)}")
+    print(f"[{label}] item={identifier} band={band} title={title!r} tags={len(tags)}")
 
     pdf_dir = '/tmp/pdfs'
     os.makedirs(pdf_dir, exist_ok=True)
@@ -124,7 +147,7 @@ def main():
         json.dump({'ok': 0, 'item_id': identifier, 'group': group, 'tags_used': [], 'per_acct': {label: {'ok': 0, 'fail': 0}}, 'error': 'no_pdfs_built'}, open('/tmp/result.json', 'w'))
         return 1
 
-    meta = build_meta(title)
+    meta = build_meta(title, band)
     sent_meta = False
     ok = fail = 0
     for i, (pf, nm) in enumerate(files):
