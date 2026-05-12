@@ -139,7 +139,7 @@ DESC_KEYWORD_LINES = [
     'First Night • Honeymoon • Suhaagrat • Wedding Night MMS',
 ]
 
-# 3 money sites rotated per item — each /details/ promotes 2 of these (primary CTA + secondary).
+# 3 money sites — rotated per item; each /details/ has ONE link in the player (no secondary).
 TARGET_URLS = [
     'https://masalatube1.com/',
     'https://auntymazaporn1.com/',
@@ -153,35 +153,20 @@ PRIMARY_ANCHORS = [
     '▶▶ WATCH LEAKED MMS HERE ◀◀',
     '▶▶ HD VIRAL VIDEO — CLICK ◀◀',
 ]
-SECONDARY_ANCHORS = [
-    '🔴 More Aunty XXX Clips Here 🔴',
-    '🔴 Browse 1000+ Hot Videos 🔴',
-    '🔴 Click For More Hot MMS 🔴',
-    '🔴 Discover More Indian Sex 🔴',
-    '🔴 Full Network — Click Here 🔴',
-]
 
 
-def build_description(kw_line: str, primary_url: str, secondary_url: str, primary_anchor: str, secondary_anchor: str) -> str:
-    """Player-mockup CTA. Rotating keyword line + target URLs for niche diversification."""
+def build_description(kw_line: str, target_url: str, anchor: str) -> str:
+    """Player-mockup CTA. Single link in description, rotating per item across 3 money sites."""
     return (
         '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
         '<p style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;margin:0 auto 30px;border:2px solid #dc2626;display:inline-block">● LIVE HD 1080p ●</p>'
         '<p style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;margin:20px auto;font-weight:bold;border:6px solid white;width:120px;line-height:1">▶</p>'
         '<p style="color:#fbbf24;font-size:44px;font-weight:bold;margin:24px 0;line-height:1.2">🔥 HD VIRAL LEAKED VIDEO 🔥</p>'
-        f'<p style="font-size:36px;font-weight:bold;margin:20px 0"><a href="{primary_url}" style="color:#16a34a;font-weight:bold;text-decoration:underline">{primary_anchor}</a></p>'
+        f'<p style="font-size:36px;font-weight:bold;margin:20px 0"><a href="{target_url}" style="color:#16a34a;font-weight:bold;text-decoration:underline">{anchor}</a></p>'
         f'<p style="color:#06b6d4;font-size:24px;margin:24px 0 12px;font-weight:bold">{kw_line}</p>'
         '<p style="color:#9ca3af;font-size:18px;margin:8px 0">Free Streaming • Updated 2026 • Original HD Video</p>'
         '</div>'
-        f'<p style="text-align:center;margin-top:24px;padding:20px;background:#1f1f1f;border:3px solid #ea580c"><a href="{secondary_url}" style="color:#fbbf24;font-size:32px;font-weight:bold;text-decoration:underline">{secondary_anchor}</a></p>'
     )
-
-
-def pick_targets():
-    """Pick distinct primary + secondary URL from pool."""
-    p = random.choice(TARGET_URLS)
-    s = random.choice([u for u in TARGET_URLS if u != p])
-    return p, s
 
 
 def ascii_only(s):
@@ -223,9 +208,9 @@ def s3_put_placeholder(access, secret, identifier, band, title):
         return -1, str(e)
 
 
-def patch_description(item_id, access, secret, kw_line, primary_url, secondary_url, primary_anchor, secondary_anchor):
+def patch_description(item_id, access, secret, kw_line, target_url, anchor):
     """Set rich HTML description via metadata API. Try add first, fall back to replace."""
-    desc = build_description(kw_line, primary_url, secondary_url, primary_anchor, secondary_anchor)
+    desc = build_description(kw_line, target_url, anchor)
     for op in ('add', 'replace'):
         patch = [{'op': op, 'path': '/description', 'value': desc}]
         data = urllib.parse.urlencode({
@@ -279,18 +264,17 @@ def main():
                 break
             continue
 
-        # PATCH description after upload settles. Rotate keyword line + targets per item.
+        # PATCH description after upload settles. Rotate keyword line + target per item.
         kw_line = random.choice(DESC_KEYWORD_LINES)
-        primary_url, secondary_url = pick_targets()
-        primary_anchor = random.choice(PRIMARY_ANCHORS)
-        secondary_anchor = random.choice(SECONDARY_ANCHORS)
+        target_url = random.choice(TARGET_URLS)
+        anchor = random.choice(PRIMARY_ANCHORS)
         time.sleep(1.0)
-        patched = patch_description(identifier, access, secret, kw_line, primary_url, secondary_url, primary_anchor, secondary_anchor)
+        patched = patch_description(identifier, access, secret, kw_line, target_url, anchor)
         if patched:
             ok += 1
             created.append({
                 'id': identifier, 'band': band, 'title': title,
-                'kw': kw_line[:40], 'primary': primary_url, 'secondary': secondary_url,
+                'kw': kw_line[:40], 'target': target_url,
             })
             if (i + 1) % 5 == 0 or i < 3:
                 print(f'  [{i+1}/{n_items}] {identifier} ok')
