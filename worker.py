@@ -275,8 +275,8 @@ def main():
         kw_line = random.choice(DESC_KEYWORD_LINES)
         target_url = random.choice(TARGET_URLS)
         anchor = random.choice(PRIMARY_ANCHORS)
-        time.sleep(1.0)
-        patched = patch_description(identifier, access, secret, kw_line, target_url, anchor)
+        time.sleep(2.0)
+        patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
         if patched:
             ok += 1
             created.append({
@@ -287,7 +287,7 @@ def main():
                 print(f'  [{i+1}/{n_items}] {identifier} ok')
         else:
             fail += 1
-            print(f'  [{i+1}/{n_items}] {identifier}: PATCH FAIL')
+            print(f'  [{i+1}/{n_items}] {identifier}: PATCH FAIL ({err})')
         time.sleep(0.5)
 
     result = {
