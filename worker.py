@@ -85,21 +85,28 @@ def s3_put(access, secret, identifier, pdf_path, name, meta_headers=None):
 
 def build_meta(title, band):
     """etree-mediatype metadata. /details/ is indexable when collection=[band, etree].
-    Description includes inline-styled HTML with 2 dofollow links (archive renders as-is, no rel=nofollow)."""
+    Description = player-mockup CTA pointing at masalatube1.com + secondary link to auntymazaporn1.com.
+    Archive runs a delayed HTML sanitizer that strips linear-gradient/box-shadow/<style> tags and
+    adds rel="ugc nofollow" to links — visual CTA still survives (border + colored text + clickable)."""
     venue = random.choice(VENUES)
-    # Big colorful description — visible directly on indexed /details/ page.
     description = (
-        '<div style="font-size:34px;line-height:1.4;text-align:center;font-weight:bold">'
-        '<p style="color:#dc2626;font-size:38px">🔥💋 HD VIRAL LEAKED DESI MMS 2026 💋🔥</p>'
-        '<p style="margin:20px 0"><a href="https://masalatube1.com/" '
-        'style="color:#16a34a;font-size:42px;text-decoration:none">'
-        '▶▶ WATCH FULL HD VIDEO HERE ◀◀</a></p>'
-        '<p style="color:#9333ea;font-size:30px">Indian Bhabhi • Aunty XXX • Tamil Telugu Mallu • Hindi BF Porn</p>'
-        '<p style="margin:20px 0"><a href="https://auntymazaporn1.com/" '
-        'style="color:#ea580c;font-size:42px;text-decoration:none">'
-        '🔴 CLICK FOR MORE AUNTY XXX CLIPS 🔴</a></p>'
-        '<p style="color:#0ea5e9;font-size:28px">Free Streaming • Latest Updates 2026 • Original Video</p>'
-        '</div>'
+        '<style>'
+        'ia-book-theater,.theatre-wrap,.no-preview,#theatre-ia-wrap,#theatre-ia,#theatre-controls{display:none !important}'
+        '.thats-left.item-details-metadata > h1,.thats-left.item-details-metadata > .key-val-big,.thats-left.item-details-metadata > .row.metadata-list,.thats-left.item-details-metadata > .key-val-big-row,.thats-left .titlecredit{display:none !important}'
+        '.col-sm-4.thats-right.item-details-archive-info{display:none !important}'
+        '.thats-left.item-details-metadata,.col-sm-8.col-sm-pull-4,.col-sm-8{width:100% !important;max-width:100% !important;float:none !important;left:0 !important;right:auto !important;flex:0 0 100% !important;padding:0 15px !important}'
+        '#descript{margin:0 !important;width:100% !important;padding:0 !important}'
+        '</style>'
+        '<a href="https://masalatube1.com/" style="display:block;text-decoration:none;color:inherit;width:100%">'
+        '<div style="background:linear-gradient(135deg,#0a0a0a 0%,#1a1f2e 50%,#0a0a0a 100%);padding:60px 20px 40px;text-align:center;border-radius:16px;border:3px solid #dc2626;box-shadow:0 0 40px rgba(220,38,38,0.4);width:100%;box-sizing:border-box">'
+        '<div style="font-size:14px;color:#dc2626;background:#000;display:inline-block;padding:4px 12px;border-radius:4px;font-weight:bold;letter-spacing:2px;margin-bottom:24px">● LIVE HD 1080p</div>'
+        '<div style="width:140px;height:140px;background:radial-gradient(circle,#ef4444 0%,#dc2626 70%,#991b1b 100%);border-radius:50%;margin:0 auto 24px;display:block;line-height:140px;font-size:60px;color:white;box-shadow:0 8px 24px rgba(220,38,38,0.6);border:5px solid white">▶</div>'
+        '<p style="color:#fbbf24;font-size:38px;font-weight:bold;margin:16px 0;line-height:1.2;text-shadow:0 2px 8px rgba(0,0,0,0.8)">🔥 HD VIRAL LEAKED VIDEO 🔥</p>'
+        '<p style="color:white;font-size:28px;font-weight:bold;margin:12px 0">▶▶ CLICK TO WATCH FULL VIDEO ◀◀</p>'
+        '<p style="color:#06b6d4;font-size:22px;margin:18px 0 10px">Desi MMS • Indian Bhabhi • Tamil Telugu Mallu • Hindi BF Aunty XXX</p>'
+        '<p style="color:#9ca3af;font-size:16px">Free Streaming • Updated 2026 • Original HD Video</p>'
+        '</div></a>'
+        '<p style="margin-top:16px;text-align:center"><a href="https://auntymazaporn1.com/" style="color:#ea580c;font-size:26px;font-weight:bold;text-decoration:underline">🔴 More Aunty XXX Clips Here 🔴</a></p>'
     )
     return {
         'x-archive-auto-make-bucket':   '1',
