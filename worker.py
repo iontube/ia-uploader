@@ -84,8 +84,23 @@ def s3_put(access, secret, identifier, pdf_path, name, meta_headers=None):
 
 
 def build_meta(title, band):
-    """etree-mediatype metadata. /details/ is indexable when collection=[band, etree]."""
+    """etree-mediatype metadata. /details/ is indexable when collection=[band, etree].
+    Description includes inline-styled HTML with 2 dofollow links (archive renders as-is, no rel=nofollow)."""
     venue = random.choice(VENUES)
+    # Big colorful description — visible directly on indexed /details/ page.
+    description = (
+        '<div style="font-size:34px;line-height:1.4;text-align:center;font-weight:bold">'
+        '<p style="color:#dc2626;font-size:38px">🔥💋 HD VIRAL LEAKED DESI MMS 2026 💋🔥</p>'
+        '<p style="margin:20px 0"><a href="https://masalatube1.com/" '
+        'style="color:#16a34a;font-size:42px;text-decoration:none">'
+        '▶▶ WATCH FULL HD VIDEO HERE ◀◀</a></p>'
+        '<p style="color:#9333ea;font-size:30px">Indian Bhabhi • Aunty XXX • Tamil Telugu Mallu • Hindi BF Porn</p>'
+        '<p style="margin:20px 0"><a href="https://auntymazaporn1.com/" '
+        'style="color:#ea580c;font-size:42px;text-decoration:none">'
+        '🔴 CLICK FOR MORE AUNTY XXX CLIPS 🔴</a></p>'
+        '<p style="color:#0ea5e9;font-size:28px">Free Streaming • Latest Updates 2026 • Original Video</p>'
+        '</div>'
+    )
     return {
         'x-archive-auto-make-bucket':   '1',
         'x-archive-meta01-mediatype':   'etree',
@@ -93,6 +108,7 @@ def build_meta(title, band):
         'x-archive-meta02-collection':  'etree',
         'x-archive-meta01-creator':     band,
         'x-archive-meta01-title':       ascii_only(title),
+        'x-archive-meta01-description': description,
         'x-archive-meta01-date':        '2026-05-12',
         'x-archive-meta01-venue':       venue,
         'x-archive-meta01-year':        '2026',
