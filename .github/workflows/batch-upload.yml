@@ -80,7 +80,7 @@ jobs:
 
       - name: Run worker
         env:
-          ITEMS_PER_RUN: ${{ inputs.items_per_run }}
+          ITEMS_PER_RUN: ${{ inputs.items_per_run || '30' }}
           MATRIX_IDX: ${{ matrix.idx }}
         run: |
           mkdir -p /tmp/results

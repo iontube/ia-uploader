@@ -252,7 +252,7 @@ def main():
     access = os.environ['IA_ACCESS']
     secret = os.environ['IA_SECRET']
     label  = os.environ.get('ACCOUNT_LABEL', 'unknown')
-    n_items = int(os.environ.get('ITEMS_PER_RUN', '30'))
+    n_items = int(os.environ.get('ITEMS_PER_RUN') or '30')
 
     print(f'[{label}] target items: {n_items}')
 
