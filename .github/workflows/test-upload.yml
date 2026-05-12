@@ -1,0 +1,77 @@
+name: Test IA Upload (PoC for CA-replica avoidance)
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Single tag/slug to build PDF for"
+        required: true
+        default: "test-from-github-runner"
+      identifier_suffix:
+        description: "Random suffix for IA identifier"
+        required: true
+        default: "gh-poc-001"
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show runner geo (sanity check IP is US)
+        run: |
+          curl -s https://ipinfo.io/json | python3 -m json.tool || true
+
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-symbola
+          pip install --quiet reportlab
+
+      - name: Build 1 PDF
+        run: |
+          python3 build_pdf.py "${{ inputs.tag }}" /tmp/test.pdf 4
+          ls -la /tmp/test.pdf
+
+      - name: Upload to archive.org via S3 PUT
+        env:
+          IA_ACCESS: ${{ secrets.IA_ACCESS }}
+          IA_SECRET: ${{ secrets.IA_SECRET }}
+        run: |
+          IDENTIFIER="test-${{ inputs.identifier_suffix }}"
+          FNAME="${{ inputs.tag }}.pdf"
+          echo "Uploading to identifier: $IDENTIFIER"
+          curl -fS -X PUT \
+            -H "Authorization: LOW $IA_ACCESS:$IA_SECRET" \
+            -H "Content-Type: application/pdf" \
+            -H "x-archive-auto-make-bucket: 1" \
+            -H "x-archive-keep-old-version: 0" \
+            -H "x-archive-queue-derive: 0" \
+            -H "x-archive-meta01-mediatype: texts" \
+            -H "x-archive-meta01-collection: opensource" \
+            -H "x-archive-meta01-title: Test PDF from GitHub Runner" \
+            -H "x-archive-meta01-description: PoC test" \
+            -H "x-archive-meta01-subject: test;poc" \
+            -H "x-archive-meta01-language: eng" \
+            --data-binary @/tmp/test.pdf \
+            "https://s3.us.archive.org/$IDENTIFIER/$FNAME"
+          echo ""
+          echo "URLs:"
+          echo "  details: https://archive.org/details/$IDENTIFIER"
+          echo "  file:    https://archive.org/download/$IDENTIFIER/$FNAME"
+
+      - name: Wait + check alternate_locations (CA replica)
+        run: |
+          IDENTIFIER="test-${{ inputs.identifier_suffix }}"
+          for i in 1 2 3 4 5 6; do
+            echo "Attempt $i / 6..."
+            sleep 15
+            META=$(curl -s "https://archive.org/metadata/$IDENTIFIER")
+            ALT=$(echo "$META" | python3 -c "import json,sys; d=json.load(sys.stdin); print('YES_CA' if d.get('alternate_locations') else ('NONE_US_ONLY' if d.get('server') else 'NOT_YET'))")
+            WS=$(echo "$META" | python3 -c "import json,sys; print(json.load(sys.stdin).get('workable_servers','-'))")
+            echo "  alt_loc: $ALT | workable_servers: $WS"
+            if [ "$ALT" = "NONE_US_ONLY" ] || [ "$ALT" = "YES_CA" ]; then
+              echo "RESULT: $ALT"
+              exit 0
+            fi
+          done
+          echo "TIMEOUT — item not yet visible"
