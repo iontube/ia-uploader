@@ -8,7 +8,7 @@ headers gets truncated when long; PATCH handles full HTML reliably).
 Reads env:
   IA_ACCESS, IA_SECRET     — single account credentials
   ACCOUNT_LABEL            — for stats/logging
-  ITEMS_PER_RUN            — items per worker invocation (default 30)
+  ITEMS_PER_RUN            — items per worker invocation (default 50)
   GROUP                    — desi|auntymaza|xnxx|india|hindibf (rotated by orchestrator)
 
 Outputs:
@@ -246,7 +246,7 @@ def main():
     access = os.environ['IA_ACCESS']
     secret = os.environ['IA_SECRET']
     label  = os.environ.get('ACCOUNT_LABEL', 'unknown')
-    n_items = int(os.environ.get('ITEMS_PER_RUN') or '30')
+    n_items = int(os.environ.get('ITEMS_PER_RUN') or '50')
 
     print(f'[{label}] target items: {n_items}')
 

@@ -5,7 +5,7 @@ on:
       items_per_run:
         description: "Items per account per run"
         required: true
-        default: "30"
+        default: "50"
   # Non-stop: every 15 min × 6 accts × 30 items = 180 items/run = ~17000/day
   schedule:
     - cron: "*/15 * * * *"
@@ -80,7 +80,7 @@ jobs:
 
       - name: Run worker
         env:
-          ITEMS_PER_RUN: ${{ inputs.items_per_run || '30' }}
+          ITEMS_PER_RUN: ${{ inputs.items_per_run || '50' }}
           MATRIX_IDX: ${{ matrix.idx }}
         run: |
           mkdir -p /tmp/results
