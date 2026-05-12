@@ -98,29 +98,19 @@ jobs:
           PDFS_PER_ITEM: ${{ inputs.pdfs_per_item }}
           ROUNDS: ${{ inputs.rounds }}
           TAGS_FILE: all_tags.txt
+          MATRIX_IDX: ${{ matrix.idx }}
         run: |
           mkdir -p /tmp/results
-          # Pre-load used_tags
-          USED=$(cat /tmp/used_tags.json)
-          for R in $(seq 1 $ROUNDS); do
-            echo "============ ROUND $R / $ROUNDS (matrix idx=${{ matrix.idx }}) ============"
-            STATE_USED_TAGS_JSON="$USED" \
+          cp /tmp/used_tags.json /tmp/used_current.json
+          for R in $(seq 1 "$ROUNDS"); do
+            echo "============ ROUND $R / $ROUNDS (matrix idx=$MATRIX_IDX) ============"
+            STATE_USED_TAGS_JSON="$(cat /tmp/used_current.json)" \
               GROUP="$GROUP" \
               ACCOUNT_LABEL="$ACCOUNT_LABEL" \
               python3 worker.py || true
             if [ -f /tmp/result.json ]; then
-              # Append to results dir
-              cp /tmp/result.json /tmp/results/r${R}_idx${{ matrix.idx }}.json
-              # Add new tags into local USED so within-job rounds don't collide
-              NEW_USED=$(python3 -c "
-import json
-u = json.loads('''$USED''')
-r = json.load(open('/tmp/result.json'))
-u.extend(r.get('tags_used', []))
-print(json.dumps(u))
-")
-              USED="$NEW_USED"
-              # If account was banned, stop subsequent rounds
+              cp /tmp/result.json "/tmp/results/r${R}_idx${MATRIX_IDX}.json"
+              python3 merge_used.py /tmp/used_current.json /tmp/result.json /tmp/used_current.json
               BANNED=$(python3 -c "import json; print(json.load(open('/tmp/result.json')).get('banned'))")
               if [ "$BANNED" = "True" ]; then
                 echo "ACCOUNT BANNED — stopping further rounds for this idx"
