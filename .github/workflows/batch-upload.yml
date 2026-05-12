@@ -1,0 +1,204 @@
+name: Batch IA Upload (6 accounts × N items)
+on:
+  workflow_dispatch:
+    inputs:
+      pdfs_per_item:
+        description: "PDFs per item"
+        required: true
+        default: "100"
+      rounds:
+        description: "Rounds per account (each round = 1 item)"
+        required: true
+        default: "1"
+
+concurrency:
+  group: ia-batch
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        idx: [0, 1, 2, 3, 4, 5]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-symbola
+          pip install --quiet reportlab requests
+
+      - name: Read state (used_tags)
+        id: state
+        run: |
+          if [ -f state.json ]; then
+            USED=$(python3 -c "import json; print(json.dumps(json.load(open('state.json'))['used_tags']))")
+          else
+            USED='[]'
+          fi
+          echo "USED_TAGS_LEN=$(python3 -c "import json,os; print(len(json.loads(os.environ['U'])))" U="$USED")" >> $GITHUB_ENV
+          # Write to a file (env var would be too big for 6900+ tags)
+          echo "$USED" > /tmp/used_tags.json
+
+      - name: Resolve account + group from matrix idx
+        id: acct
+        env:
+          IDX: ${{ matrix.idx }}
+        run: |
+          # Group cycle similar to original — distinct per matrix slot to reduce tag collisions
+          GROUPS=(desi auntymaza xnxx india hindibf desi)
+          echo "GROUP=${GROUPS[$IDX]}" >> $GITHUB_ENV
+          # Account label by index — must match secret naming
+          LABELS=(acct1 acct2 acct3 acct4 acct5 acct6)
+          echo "ACCOUNT_LABEL=${LABELS[$IDX]}" >> $GITHUB_ENV
+
+      - name: Pick IA credentials by index
+        id: creds
+        env:
+          IDX: ${{ matrix.idx }}
+          IA_ACCESS_1: ${{ secrets.IA_ACCESS_1 }}
+          IA_SECRET_1: ${{ secrets.IA_SECRET_1 }}
+          IA_ACCESS_2: ${{ secrets.IA_ACCESS_2 }}
+          IA_SECRET_2: ${{ secrets.IA_SECRET_2 }}
+          IA_ACCESS_3: ${{ secrets.IA_ACCESS_3 }}
+          IA_SECRET_3: ${{ secrets.IA_SECRET_3 }}
+          IA_ACCESS_4: ${{ secrets.IA_ACCESS_4 }}
+          IA_SECRET_4: ${{ secrets.IA_SECRET_4 }}
+          IA_ACCESS_5: ${{ secrets.IA_ACCESS_5 }}
+          IA_SECRET_5: ${{ secrets.IA_SECRET_5 }}
+          IA_ACCESS_6: ${{ secrets.IA_ACCESS_6 }}
+          IA_SECRET_6: ${{ secrets.IA_SECRET_6 }}
+        run: |
+          N=$((IDX+1))
+          eval "ACC=\$IA_ACCESS_$N"
+          eval "SEC=\$IA_SECRET_$N"
+          if [ -z "$ACC" ] || [ -z "$SEC" ]; then
+            echo "Missing IA_ACCESS_$N or IA_SECRET_$N — skipping" >&2
+            exit 78  # neutral status (skipped)
+          fi
+          # Mask in logs
+          echo "::add-mask::$ACC"
+          echo "::add-mask::$SEC"
+          # Write to env file (avoid logging via output)
+          {
+            echo "IA_ACCESS<<EOF"
+            echo "$ACC"
+            echo "EOF"
+            echo "IA_SECRET<<EOF"
+            echo "$SEC"
+            echo "EOF"
+          } >> $GITHUB_ENV
+
+      - name: Run rounds
+        env:
+          PDFS_PER_ITEM: ${{ inputs.pdfs_per_item }}
+          ROUNDS: ${{ inputs.rounds }}
+          TAGS_FILE: all_tags.txt
+        run: |
+          mkdir -p /tmp/results
+          # Pre-load used_tags
+          USED=$(cat /tmp/used_tags.json)
+          for R in $(seq 1 $ROUNDS); do
+            echo "============ ROUND $R / $ROUNDS (matrix idx=${{ matrix.idx }}) ============"
+            STATE_USED_TAGS_JSON="$USED" \
+              GROUP="$GROUP" \
+              ACCOUNT_LABEL="$ACCOUNT_LABEL" \
+              python3 worker.py || true
+            if [ -f /tmp/result.json ]; then
+              # Append to results dir
+              cp /tmp/result.json /tmp/results/r${R}_idx${{ matrix.idx }}.json
+              # Add new tags into local USED so within-job rounds don't collide
+              NEW_USED=$(python3 -c "
+import json
+u = json.loads('''$USED''')
+r = json.load(open('/tmp/result.json'))
+u.extend(r.get('tags_used', []))
+print(json.dumps(u))
+")
+              USED="$NEW_USED"
+              # If account was banned, stop subsequent rounds
+              BANNED=$(python3 -c "import json; print(json.load(open('/tmp/result.json')).get('banned'))")
+              if [ "$BANNED" = "True" ]; then
+                echo "ACCOUNT BANNED — stopping further rounds for this idx"
+                break
+              fi
+            fi
+          done
+
+      - name: Upload result artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-idx-${{ matrix.idx }}
+          path: /tmp/results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  commit-state:
+    needs: upload
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download all results
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/all_results
+
+      - name: Merge results into state.json
+        run: |
+          python3 << 'PY'
+          import json, os, glob, time
+          state = json.load(open('state.json')) if os.path.exists('state.json') else {
+            'used_tags': [], 'run_count': 0, 'items': [], 'acct_stats': {}
+          }
+          merged = 0
+          for f in sorted(glob.glob('/tmp/all_results/**/*.json', recursive=True)):
+              try:
+                  r = json.load(open(f))
+              except:
+                  continue
+              if not r.get('ok'):
+                  continue
+              state['used_tags'].extend(r.get('tags_used', []))
+              state['items'].append({
+                  'id': r['item_id'],
+                  'group': r['group'],
+                  'pdfs': r['ok'],
+                  'uploaded': r['ok'],
+                  'ts': time.strftime('%Y-%m-%dT%H:%M:%S'),
+                  'per_acct': r.get('per_acct', {}),
+                  'details_url': r.get('details_url'),
+              })
+              for lbl, s in r.get('per_acct', {}).items():
+                  agg = state.setdefault('acct_stats', {}).setdefault(lbl, {'ok': 0, 'fail': 0})
+                  agg['ok']   += s.get('ok', 0)
+                  agg['fail'] += s.get('fail', 0)
+              merged += 1
+          # Dedup + cap
+          state['used_tags'] = list(dict.fromkeys(state['used_tags']))[-100000:]
+          state['items']     = state['items'][-3000:]
+          state['run_count'] = state.get('run_count', 0) + 1
+          state['last_run']  = time.strftime('%Y-%m-%d %H:%M:%S')
+          json.dump(state, open('state.json', 'w'), indent=2)
+          print(f'merged {merged} results; total items={len(state["items"])}; used_tags={len(state["used_tags"])}')
+          PY
+
+      - name: Commit state.json
+        run: |
+          git config user.name  "iontube-bot"
+          git config user.email "iontube@noreply.github.com"
+          git add state.json
+          if git diff --cached --quiet; then
+            echo "no state changes"
+          else
+            git commit -m "state: after batch run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            git push
+          fi
