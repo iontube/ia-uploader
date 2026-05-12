@@ -11,8 +11,10 @@ on:
         required: true
         default: "1"
 
+# Allow parallel runs — each gets unique concurrency group via run_id.
+# Concurrent runs hit same 6 accounts; 0.8s sleep per upload keeps per-account QPS low.
 concurrency:
-  group: ia-batch
+  group: ia-batch-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
