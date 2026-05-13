@@ -406,18 +406,55 @@ def main():
         # of a doorway. Dilutes the account's corpus so it doesn't read as 100% adult-spam.
         is_innocent = random.random() < 0.05
 
+        kw_slug_parts = []
         if is_innocent:
             title, neutral_desc = gen_innocent(band)
+            # Innocent items keep the old plain identifier scheme
+            kw_slug_parts = []
         else:
             zone_label, zone_slug = pinned_label, pinned_slug
             _zl_low = zone_label.lower()
             if 'porn' not in _zl_low and 'sex' not in _zl_low:
                 zone_label = f'{zone_label} {random.choice(("Porn", "Sex"))}'
+
+            # === Level 1A — XnXX as universal secondary anchor (40% of items) ===
+            # "XnXX" is the highest-volume brand keyword in this niche; co-occurs
+            # well with every category. Inject as title prefix on ~40% of items so
+            # every zone gets XnXX-tail coverage, not just acct15 which is pinned to XnXX.
+            if 'xnxx' not in zone_label.lower() and random.random() < 0.40:
+                zone_label = f'XnXX {zone_label}'
+
+            # === Level 1B — Cross-zone secondary mention (30% of items) ===
+            # Pick another zone from the ring and append its label to the keyword.
+            # Catches dual SERPs (primary zone + secondary zone) per item.
+            secondary_label = ''
+            if random.random() < 0.30:
+                others = [z[0] for z in _ZONE_RING if z[0].lower() not in zone_label.lower()]
+                if others:
+                    secondary_label = random.choice(others)
+                    zone_label = f'{zone_label} {secondary_label}'
+
             title = f'{gen_title(zone_label)} {random.randint(100, 999)}'
 
-        suffix = f'{label}-{int(time.time())%100000}-{random.randint(100, 9999)}'
+            # === Level 3 — Keyword slug in identifier (URL signal) ===
+            # IA accepts lowercase + digits + hyphen + period. Inject 3-5 keywords
+            # from the chosen vocabulary into the identifier so the /details/<id>
+            # URL carries them. Total identifier cap is ~80 chars to be safe.
+            import re as _re
+            kw_words = zone_label.lower().split()
+            kw_words.append(random.choice(REGIONS).lower())
+            kw_words.append(random.choice(CATEGORIES).lower())
+            kw_slug = '-'.join(_re.sub(r'[^a-z0-9]+', '', w) for w in kw_words if w)
+            # cap at 50 chars to keep total identifier well under 100 chars
+            kw_slug = kw_slug[:50].rstrip('-')
+            kw_slug_parts = [kw_slug] if kw_slug else []
+
+        rand_suffix = f'{label}-{random.randint(1000, 99999)}'
         today = time.strftime('%Y-%m-%d')
-        identifier = f'{band}{today}.{suffix}'
+        if kw_slug_parts:
+            identifier = f'{band}{today}.{kw_slug_parts[0]}.{rand_suffix}'
+        else:
+            identifier = f'{band}{today}.{rand_suffix}'
 
         code, body = s3_put_placeholder(access, secret, identifier, band, title)
         if code not in (200, 201):
