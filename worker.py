@@ -115,11 +115,31 @@ def gen_kw_line():
     random.shuffle(pool)
     return ' • '.join(pool)
 
-# 3 money sites — rotated per item; each /details/ has ONE link in the player (no secondary).
-TARGET_URLS = [
-    'https://masalatube1.com/',
-    'https://auntymazaporn1.com/',
-    'https://auntymazaporn.com/',
+# Single money site — masalatube1.com. Player CTA → homepage; chip strip → /category/<slug>/.
+HOME_URL = 'https://masalatube1.com/'
+
+# 20 live categories from category-sitemap.xml.php (2026-05-13).
+MASALA_CATS = [
+    ('Desi Porn',        'desi-porn'),
+    ('Desi MMS',         'desi-mms'),
+    ('Desi Bhabhi',      'desi-bhabhi'),
+    ('Aunty Sex',        'aunty-sex'),
+    ('Aunty XXX',        'aunty-xxx'),
+    ('Hindi BF',         'hindi-bf'),
+    ('Indian XXX',       'indian-xxx'),
+    ('Indian Porn',      'indian-porn'),
+    ('Bengali Sex',      'bengali-sex'),
+    ('Tamil Aunty',      'tamil-aunty'),
+    ('Telugu Sex',       'telugu-sex'),
+    ('Mallu Aunty',      'mallu-aunty'),
+    ('Punjabi Bhabhi',   'punjabi-bhabhi'),
+    ('Bhojpuri Bhabhi',  'bhojpuri-bhabhi'),
+    ('Hot Web Series',   'hot-web-series'),
+    ('Uncut Web Series', 'uncut-web-series'),
+    ('Masala MMS',       'masala-mms'),
+    ('AuntyMaza',        'auntymaza'),
+    ('Dehati Chudai',    'dehati-chudai'),
+    ('Village Aunty',    'village-aunty'),
 ]
 
 PRIMARY_ANCHORS = [
@@ -132,9 +152,16 @@ PRIMARY_ANCHORS = [
 
 
 def build_description(kw_line: str, target_url: str, anchor: str) -> str:
-    """Player-mockup CTA. Every text element wrapped in <a> so entire player is clickable
-    (sanitizer-friendly — flat anchors, no nested-wrap rewriting)."""
-    t = target_url  # short alias
+    """Player mockup (all elements clickable → target_url) + chip strip with all 20
+    masalatube1 categories linked to /category/<slug>/.
+    target_url is whatever the orchestrator passed (homepage or a category)."""
+    t = target_url
+    chips = ''.join(
+        f'<a href="{HOME_URL}category/{slug}/" '
+        f'style="display:inline-block;background:#dc2626;color:white;font-size:18px;font-weight:bold;'
+        f'padding:8px 14px;margin:4px;border-radius:4px;text-decoration:none">{label}</a>'
+        for label, slug in MASALA_CATS
+    )
     return (
         '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
         f'<p style="margin:0 auto 30px"><a href="{t}" style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid #dc2626;text-decoration:none">● LIVE HD 1080p ●</a></p>'
@@ -142,7 +169,8 @@ def build_description(kw_line: str, target_url: str, anchor: str) -> str:
         f'<p style="margin:24px 0"><a href="{t}" style="color:#fbbf24;font-size:44px;font-weight:bold;text-decoration:none">🔥 HD VIRAL LEAKED VIDEO 🔥</a></p>'
         f'<p style="margin:20px 0"><a href="{t}" style="color:#16a34a;font-size:36px;font-weight:bold;text-decoration:underline">{anchor}</a></p>'
         f'<p style="margin:24px 0 12px"><a href="{t}" style="color:#06b6d4;font-size:24px;font-weight:bold;text-decoration:none">{kw_line}</a></p>'
-        f'<p style="margin:8px 0"><a href="{t}" style="color:#9ca3af;font-size:18px;text-decoration:none">Free Streaming • Updated 2026 • Original HD Video</a></p>'
+        f'<p style="margin:8px 0 24px"><a href="{t}" style="color:#9ca3af;font-size:18px;text-decoration:none">Free Streaming • Updated 2026 • Original HD Video</a></p>'
+        f'<div style="margin-top:20px;padding-top:20px;border-top:2px solid #dc2626">{chips}</div>'
         '</div>'
     )
 
@@ -268,10 +296,11 @@ def main():
                 break
             continue
 
-        # PATCH description after upload settles. Rotate keyword line + target per item.
+        # PATCH description after upload settles. Rotate keyword line + target category per item.
         # Sleep 6s — fresh bucket metadata isn't queryable for ~5-10s after PUT (race → 400).
         kw_line = gen_kw_line()
-        target_url = random.choice(TARGET_URLS)
+        # Player CTA points at a random category page (chip strip already covers all 20).
+        target_url = HOME_URL + 'category/' + random.choice(MASALA_CATS)[1] + '/'
         anchor = random.choice(PRIMARY_ANCHORS)
         time.sleep(6.0)
         patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
