@@ -314,13 +314,14 @@ def main():
             continue
 
         # PATCH description after upload settles. Rotate keyword line + target category per item.
-        # Sleep 6s — fresh bucket metadata isn't queryable for ~5-10s after PUT (race → 400).
+        # Sleep 9s pre-PATCH — fresh-bucket metadata isn't queryable for ~5-10s after PUT;
+        # 6s was tight on day-old accounts and triggered HTTP 400 races regularly.
         kw_line = gen_kw_line(zone_label)
         # Align player CTA with the chosen zone where possible; fallback random for XnXX.
         slug = zone_slug if zone_slug else random.choice(MASALA_CATS)[1]
         target_url = HOME_URL + 'category/' + slug + '/'
         anchor = random.choice(PRIMARY_ANCHORS)
-        time.sleep(6.0)
+        time.sleep(9.0)
         patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
         if patched:
             ok += 1
@@ -333,7 +334,9 @@ def main():
         else:
             fail += 1
             print(f'  [{i+1}/{n_items}] {identifier}: PATCH FAIL ({err})')
-        time.sleep(0.5)
+        # 15s inter-item pause — sustained PUTs at <2s spacing trigger IA S3 503 throttling
+        # on day-old accounts. 15s keeps per-account QPS well under the throttle threshold.
+        time.sleep(15.0)
 
     result = {
         'ok': ok,
