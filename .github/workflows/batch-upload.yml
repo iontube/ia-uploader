@@ -20,12 +20,12 @@ jobs:
   upload:
     strategy:
       fail-fast: false
-      max-parallel: 47
+      max-parallel: 50
       matrix:
         idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
               15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
               30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
-              45, 46]
+              45, 46, 47, 48, 49]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -141,6 +141,12 @@ jobs:
           IA_SECRET_46: ${{ secrets.IA_SECRET_46 }}
           IA_ACCESS_47: ${{ secrets.IA_ACCESS_47 }}
           IA_SECRET_47: ${{ secrets.IA_SECRET_47 }}
+          IA_ACCESS_48: ${{ secrets.IA_ACCESS_48 }}
+          IA_SECRET_48: ${{ secrets.IA_SECRET_48 }}
+          IA_ACCESS_49: ${{ secrets.IA_ACCESS_49 }}
+          IA_SECRET_49: ${{ secrets.IA_SECRET_49 }}
+          IA_ACCESS_50: ${{ secrets.IA_ACCESS_50 }}
+          IA_SECRET_50: ${{ secrets.IA_SECRET_50 }}
         run: |
           N=$((IDX+1))
           eval "ACC=\$IA_ACCESS_$N"
