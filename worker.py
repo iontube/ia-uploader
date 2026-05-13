@@ -294,6 +294,11 @@ def main():
     for i in range(n_items):
         band = random.choice(ETREE_BANDS)
         zone_label, zone_slug = random.choice(ZONES)
+        # Always carry "Porn" or "Sex" in the zone keyword (porn-vocab anchor for SERP).
+        # Skip if the zone already contains either word to avoid "Desi Porn Porn".
+        _zl_low = zone_label.lower()
+        if 'porn' not in _zl_low and 'sex' not in _zl_low:
+            zone_label = f'{zone_label} {random.choice(("Porn", "Sex"))}'
         title = f'{gen_title(zone_label)} {random.randint(100, 999)}'
         suffix = f'{label}-{int(time.time())%100000}-{random.randint(100, 9999)}'
         today = time.strftime('%Y-%m-%d')
