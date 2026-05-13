@@ -20,9 +20,12 @@ jobs:
   upload:
     strategy:
       fail-fast: false
-      max-parallel: 15
+      max-parallel: 47
       matrix:
-        idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+        idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+              15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+              30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44,
+              45, 46]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -74,6 +77,70 @@ jobs:
           IA_SECRET_14: ${{ secrets.IA_SECRET_14 }}
           IA_ACCESS_15: ${{ secrets.IA_ACCESS_15 }}
           IA_SECRET_15: ${{ secrets.IA_SECRET_15 }}
+          IA_ACCESS_16: ${{ secrets.IA_ACCESS_16 }}
+          IA_SECRET_16: ${{ secrets.IA_SECRET_16 }}
+          IA_ACCESS_17: ${{ secrets.IA_ACCESS_17 }}
+          IA_SECRET_17: ${{ secrets.IA_SECRET_17 }}
+          IA_ACCESS_18: ${{ secrets.IA_ACCESS_18 }}
+          IA_SECRET_18: ${{ secrets.IA_SECRET_18 }}
+          IA_ACCESS_19: ${{ secrets.IA_ACCESS_19 }}
+          IA_SECRET_19: ${{ secrets.IA_SECRET_19 }}
+          IA_ACCESS_20: ${{ secrets.IA_ACCESS_20 }}
+          IA_SECRET_20: ${{ secrets.IA_SECRET_20 }}
+          IA_ACCESS_21: ${{ secrets.IA_ACCESS_21 }}
+          IA_SECRET_21: ${{ secrets.IA_SECRET_21 }}
+          IA_ACCESS_22: ${{ secrets.IA_ACCESS_22 }}
+          IA_SECRET_22: ${{ secrets.IA_SECRET_22 }}
+          IA_ACCESS_23: ${{ secrets.IA_ACCESS_23 }}
+          IA_SECRET_23: ${{ secrets.IA_SECRET_23 }}
+          IA_ACCESS_24: ${{ secrets.IA_ACCESS_24 }}
+          IA_SECRET_24: ${{ secrets.IA_SECRET_24 }}
+          IA_ACCESS_25: ${{ secrets.IA_ACCESS_25 }}
+          IA_SECRET_25: ${{ secrets.IA_SECRET_25 }}
+          IA_ACCESS_26: ${{ secrets.IA_ACCESS_26 }}
+          IA_SECRET_26: ${{ secrets.IA_SECRET_26 }}
+          IA_ACCESS_27: ${{ secrets.IA_ACCESS_27 }}
+          IA_SECRET_27: ${{ secrets.IA_SECRET_27 }}
+          IA_ACCESS_28: ${{ secrets.IA_ACCESS_28 }}
+          IA_SECRET_28: ${{ secrets.IA_SECRET_28 }}
+          IA_ACCESS_29: ${{ secrets.IA_ACCESS_29 }}
+          IA_SECRET_29: ${{ secrets.IA_SECRET_29 }}
+          IA_ACCESS_30: ${{ secrets.IA_ACCESS_30 }}
+          IA_SECRET_30: ${{ secrets.IA_SECRET_30 }}
+          IA_ACCESS_31: ${{ secrets.IA_ACCESS_31 }}
+          IA_SECRET_31: ${{ secrets.IA_SECRET_31 }}
+          IA_ACCESS_32: ${{ secrets.IA_ACCESS_32 }}
+          IA_SECRET_32: ${{ secrets.IA_SECRET_32 }}
+          IA_ACCESS_33: ${{ secrets.IA_ACCESS_33 }}
+          IA_SECRET_33: ${{ secrets.IA_SECRET_33 }}
+          IA_ACCESS_34: ${{ secrets.IA_ACCESS_34 }}
+          IA_SECRET_34: ${{ secrets.IA_SECRET_34 }}
+          IA_ACCESS_35: ${{ secrets.IA_ACCESS_35 }}
+          IA_SECRET_35: ${{ secrets.IA_SECRET_35 }}
+          IA_ACCESS_36: ${{ secrets.IA_ACCESS_36 }}
+          IA_SECRET_36: ${{ secrets.IA_SECRET_36 }}
+          IA_ACCESS_37: ${{ secrets.IA_ACCESS_37 }}
+          IA_SECRET_37: ${{ secrets.IA_SECRET_37 }}
+          IA_ACCESS_38: ${{ secrets.IA_ACCESS_38 }}
+          IA_SECRET_38: ${{ secrets.IA_SECRET_38 }}
+          IA_ACCESS_39: ${{ secrets.IA_ACCESS_39 }}
+          IA_SECRET_39: ${{ secrets.IA_SECRET_39 }}
+          IA_ACCESS_40: ${{ secrets.IA_ACCESS_40 }}
+          IA_SECRET_40: ${{ secrets.IA_SECRET_40 }}
+          IA_ACCESS_41: ${{ secrets.IA_ACCESS_41 }}
+          IA_SECRET_41: ${{ secrets.IA_SECRET_41 }}
+          IA_ACCESS_42: ${{ secrets.IA_ACCESS_42 }}
+          IA_SECRET_42: ${{ secrets.IA_SECRET_42 }}
+          IA_ACCESS_43: ${{ secrets.IA_ACCESS_43 }}
+          IA_SECRET_43: ${{ secrets.IA_SECRET_43 }}
+          IA_ACCESS_44: ${{ secrets.IA_ACCESS_44 }}
+          IA_SECRET_44: ${{ secrets.IA_SECRET_44 }}
+          IA_ACCESS_45: ${{ secrets.IA_ACCESS_45 }}
+          IA_SECRET_45: ${{ secrets.IA_SECRET_45 }}
+          IA_ACCESS_46: ${{ secrets.IA_ACCESS_46 }}
+          IA_SECRET_46: ${{ secrets.IA_SECRET_46 }}
+          IA_ACCESS_47: ${{ secrets.IA_ACCESS_47 }}
+          IA_SECRET_47: ${{ secrets.IA_SECRET_47 }}
         run: |
           N=$((IDX+1))
           eval "ACC=\$IA_ACCESS_$N"
