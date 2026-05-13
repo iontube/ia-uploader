@@ -31,8 +31,21 @@ if os.environ.get('SOURCE_IP'):
     http.client.HTTPSConnection.__init__ = _bound_https_init
 
 ETREE_BANDS = [
+    # Originals (low-traffic etree sub-collections, validated as indexable)
     'Strangefolk', 'AcidMothersTemple', 'WidespreadPanic',
     'BirthMusic', 'BenTraverse', 'TheTravelinKine',
+    # Diversifiers — real etree sub-collections sampled from
+    # archive.org's 9200+ band catalog. Spreads our 100s-of-items-per-day
+    # across 36 bands so no single collection becomes a spam-spike outlier
+    # (each band averages low triple digits of items; ours add proportionally).
+    'TheDBWalkerBand', 'UnseenStrangers', 'Clogs', 'Aristeia',
+    'WoodenHorsemen', 'SteelGravy', 'Shorefire', 'MasonsChildren',
+    'Harpoon', 'RogueWave', 'Innasci', 'KenoshaKid',
+    'LoungeDrugs', 'GreenLight', 'FunkbudJohnny', 'TheHardestDaze',
+    'DowdySmack', 'ElectricSoulParade', 'BigSwingTrio', 'Atoadaso',
+    'PocketChange', 'SouthernFriedFunk', 'LeroyTownes', 'Spyscraper',
+    'AnimalCollective', 'TheSilentTrees', 'ClaudiaJane', 'NagChampayons',
+    'JonoManson', 'FreeGrassUnion',
 ]
 VENUES = ['gthrny','live-show','outdoor-fest','soundcheck','rehearsal','jam-session']
 
