@@ -246,27 +246,37 @@ PRIMARY_ANCHORS = [
 ]
 
 
-def build_description(kw_line: str, target_url: str, anchor: str) -> str:
-    """Player mockup (all elements clickable → target_url) + chip strip with all 20
-    masalatube1 categories linked to /category/<slug>/.
-    target_url is whatever the orchestrator passed (homepage or a category)."""
-    t = target_url
-    chips = ''.join(
-        f'<a href="{HOME_URL}category/{slug}/" '
-        f'style="display:inline-block;background:#dc2626;color:white;font-size:18px;font-weight:bold;'
-        f'padding:8px 14px;margin:4px;border-radius:4px;text-decoration:none">{label}</a>'
-        for label, slug in MASALA_CATS
+def build_description(kw_line: str, target_url: str, anchor: str, asset_gif_url: str) -> str:
+    """GIF-top + big CTA-button + SEO-keywords-bottom layout.
+    asset_gif_url points to cta-play.gif hosted in this account's asset item
+    (cta-assets-<label>). Same-origin archive.org URL → not Wayback-rewritten.
+    Carousel-image-wrapper at top of /details/ stays clean (no gif file in
+    this content item, so IA doesn't auto-promote one to the player area).
+    """
+    chips = ', '.join(
+        f'<a href="{HOME_URL}category/{slug}/" style="color:#888;text-decoration:underline">{label}</a>'
+        for label, slug in MASALA_CATS[:10]
     )
+    gif_block = (
+        f'<p style="text-align:center">'
+        f'<a href="{target_url}">'
+        f'<img src="{asset_gif_url}" width="720" height="405" alt="{anchor}" style="border:5px solid #ffeb3b">'
+        f'</a></p>'
+    ) if asset_gif_url else ''
     return (
-        '<div style="background:#0a0a0a;border:6px solid #dc2626;padding:60px 20px;text-align:center">'
-        f'<p style="margin:0 auto 30px"><a href="{t}" style="color:#dc2626;background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid #dc2626;text-decoration:none">● LIVE HD 1080p ●</a></p>'
-        f'<p style="margin:20px auto"><a href="{t}" style="background:#dc2626;color:white;font-size:90px;padding:20px 50px;font-weight:bold;border:6px solid white;text-decoration:none">▶</a></p>'
-        f'<p style="margin:24px 0"><a href="{t}" style="color:#fbbf24;font-size:44px;font-weight:bold;text-decoration:none">🔥 HD VIRAL LEAKED VIDEO 🔥</a></p>'
-        f'<p style="margin:20px 0"><a href="{t}" style="color:#16a34a;font-size:36px;font-weight:bold;text-decoration:underline">{anchor}</a></p>'
-        f'<p style="margin:24px 0 12px"><a href="{t}" style="color:#06b6d4;font-size:24px;font-weight:bold;text-decoration:none">{kw_line}</a></p>'
-        f'<p style="margin:8px 0 24px"><a href="{t}" style="color:#9ca3af;font-size:18px;text-decoration:none">Free Streaming • Updated 2026 • Original HD Video</a></p>'
-        f'<div style="margin-top:20px;padding-top:20px;border-top:2px solid #dc2626">{chips}</div>'
-        '</div>'
+        # TOP: clickable HD GIF banner (cross-item same-origin URL); blank if asset missing
+        gif_block +
+        # MIDDLE: big red CTA button, full-width visible
+        f'<div style="background:#c41e3a;padding:60px 0;text-align:center;font-size:48px;'
+        f'color:#ffffff;border:8px solid #ffeb3b;font-weight:bold;text-transform:uppercase;'
+        f'letter-spacing:3px">'
+        f'<a href="{target_url}" style="color:#ffffff;text-decoration:none;padding:60px 200px;background:transparent">'
+        f'{anchor}'
+        f'</a></div>'
+        # BOTTOM: SEO keyword paragraph + 10 chip anchors (Google crawler bait)
+        f'<p style="margin-top:40px;color:#666;font-size:12px;line-height:1.6">'
+        f'{kw_line} — Related categories: {chips}.'
+        f'</p>'
     )
 
 
@@ -332,13 +342,71 @@ def patch_description_raw(item_id, access, secret, desc):
     return _patch_metadata_description(item_id, access, secret, desc)
 
 
-def patch_description(item_id, access, secret, kw_line, target_url, anchor):
+def patch_description(item_id, access, secret, kw_line, target_url, anchor, asset_gif_url):
     """Set rich HTML description via metadata API.
     Brand-new buckets race-condition: metadata not ready for ~5-10s after PUT, returns
     400. Retry with progressive backoff (3s, 6s, 12s) and toggle add/replace ops.
     """
-    desc = build_description(kw_line, target_url, anchor)
+    desc = build_description(kw_line, target_url, anchor, asset_gif_url)
     return _patch_metadata_description(item_id, access, secret, desc)
+
+
+def ensure_asset_item(access, secret, label):
+    """Make sure this account has its CTA asset item (cta-assets-<label>).
+    Created once per account; subsequent runs detect existence and skip.
+    Asset is mediatype=image + opensource_image → IA stamps NOINDEX on it,
+    so it stays out of search and out of admin scrutiny. Returns the gif URL
+    or None if creation failed (caller falls back to a no-image description)."""
+    asset_id = f'cta-assets-{label}'
+    asset_url = f'https://archive.org/download/{asset_id}/cta-play.gif'
+
+    # Already exists? GET metadata, look for cta-play.gif in file list.
+    try:
+        r = urllib.request.urlopen(f'https://archive.org/metadata/{asset_id}', timeout=10)
+        meta = json.loads(r.read().decode())
+        files = {f.get('name', '') for f in meta.get('files', [])}
+        if 'cta-play.gif' in files:
+            print(f'[asset] {asset_id} exists, reusing')
+            return asset_url
+    except Exception:
+        pass  # not yet created — fall through to create
+
+    # Need to create. GIF must be bundled with worker.py in the repo.
+    gif_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cta-play.gif')
+    if not os.path.exists(gif_path):
+        print(f'[asset] WARN: {gif_path} missing — cannot create asset item; descriptions will skip GIF')
+        return None
+    with open(gif_path, 'rb') as f:
+        gif_bytes = f.read()
+
+    headers = {
+        'Authorization':                f'LOW {access}:{secret}',
+        'Content-Type':                 'image/gif',
+        'x-archive-auto-make-bucket':   '1',
+        'x-archive-queue-derive':       '0',
+        'x-archive-meta01-mediatype':   'image',
+        'x-archive-meta01-collection':  'opensource_image',
+        'x-archive-meta01-title':       f'CTA Banner Assets {label}',
+        'x-archive-meta01-date':        time.strftime('%Y-%m-%d'),
+        'x-archive-meta01-language':    'eng',
+        'Content-Length':               str(len(gif_bytes)),
+        'User-Agent':                   pick_ua(),
+    }
+    req = urllib.request.Request(f'https://s3.us.archive.org/{asset_id}/cta-play.gif',
+                                 data=gif_bytes, method='PUT')
+    for k, v in headers.items():
+        req.add_header(k, v)
+    try:
+        urllib.request.urlopen(req, timeout=300).read()
+        print(f'[asset] created {asset_id} ({len(gif_bytes)/1024/1024:.1f}MB)')
+        return asset_url
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', 'ignore')[:200]
+        print(f'[asset] PUT FAIL HTTP{e.code} {body}')
+        return None
+    except Exception as e:
+        print(f'[asset] ERR {e}')
+        return None
 
 
 def _patch_metadata_description(item_id, access, secret, desc):
@@ -389,6 +457,10 @@ def main():
     n_items = int(os.environ.get('ITEMS_PER_RUN') or '50')
 
     print(f'[{label}] target items: {n_items}')
+
+    # Ensure the per-account CTA asset item exists (one-time create per acct).
+    # Without it, content items lose the GIF banner but still ship the SEO + CTA button.
+    asset_gif_url = ensure_asset_item(access, secret, label)
 
     ok = fail = 0
     created = []
@@ -483,7 +555,7 @@ def main():
             slug = zone_slug if zone_slug else random.choice(MASALA_CATS)[1]
             target_url = HOME_URL + 'category/' + slug + '/'
             anchor = random.choice(PRIMARY_ANCHORS)
-            patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
+            patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor, asset_gif_url)
         if patched:
             ok += 1
             created.append({
