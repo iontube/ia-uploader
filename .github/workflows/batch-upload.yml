@@ -20,9 +20,9 @@ jobs:
   upload:
     strategy:
       fail-fast: false
-      max-parallel: 6
+      max-parallel: 15
       matrix:
-        idx: [0, 1, 2, 3, 4, 5]
+        idx: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,33 +30,50 @@ jobs:
       - name: (no extra deps — pure stdlib worker)
         run: echo "stub-items worker uses only urllib"
 
-      - name: Resolve account + group from matrix idx
+      - name: Resolve account label from matrix idx
         id: acct
         env:
           IDX: ${{ matrix.idx }}
         run: |
-          # Group cycle per matrix slot. Named GROUP_CYCLE because $GROUPS is a bash builtin (user GIDs).
-          GROUP_CYCLE=(desi auntymaza xnxx india hindibf desi)
-          echo "GROUP=${GROUP_CYCLE[$IDX]}" >> $GITHUB_ENV
-          LABELS=(acct1 acct2 acct3 acct4 acct5 acct6)
-          echo "ACCOUNT_LABEL=${LABELS[$IDX]}" >> $GITHUB_ENV
+          N=$((IDX+1))
+          echo "ACCOUNT_LABEL=acct${N}" >> $GITHUB_ENV
+          # GROUP is vestigial metadata kept only for result.json shape compatibility.
+          echo "GROUP=pinned" >> $GITHUB_ENV
 
       - name: Pick IA credentials by index
         id: creds
         env:
           IDX: ${{ matrix.idx }}
-          IA_ACCESS_1: ${{ secrets.IA_ACCESS_1 }}
-          IA_SECRET_1: ${{ secrets.IA_SECRET_1 }}
-          IA_ACCESS_2: ${{ secrets.IA_ACCESS_2 }}
-          IA_SECRET_2: ${{ secrets.IA_SECRET_2 }}
-          IA_ACCESS_3: ${{ secrets.IA_ACCESS_3 }}
-          IA_SECRET_3: ${{ secrets.IA_SECRET_3 }}
-          IA_ACCESS_4: ${{ secrets.IA_ACCESS_4 }}
-          IA_SECRET_4: ${{ secrets.IA_SECRET_4 }}
-          IA_ACCESS_5: ${{ secrets.IA_ACCESS_5 }}
-          IA_SECRET_5: ${{ secrets.IA_SECRET_5 }}
-          IA_ACCESS_6: ${{ secrets.IA_ACCESS_6 }}
-          IA_SECRET_6: ${{ secrets.IA_SECRET_6 }}
+          IA_ACCESS_1:  ${{ secrets.IA_ACCESS_1 }}
+          IA_SECRET_1:  ${{ secrets.IA_SECRET_1 }}
+          IA_ACCESS_2:  ${{ secrets.IA_ACCESS_2 }}
+          IA_SECRET_2:  ${{ secrets.IA_SECRET_2 }}
+          IA_ACCESS_3:  ${{ secrets.IA_ACCESS_3 }}
+          IA_SECRET_3:  ${{ secrets.IA_SECRET_3 }}
+          IA_ACCESS_4:  ${{ secrets.IA_ACCESS_4 }}
+          IA_SECRET_4:  ${{ secrets.IA_SECRET_4 }}
+          IA_ACCESS_5:  ${{ secrets.IA_ACCESS_5 }}
+          IA_SECRET_5:  ${{ secrets.IA_SECRET_5 }}
+          IA_ACCESS_6:  ${{ secrets.IA_ACCESS_6 }}
+          IA_SECRET_6:  ${{ secrets.IA_SECRET_6 }}
+          IA_ACCESS_7:  ${{ secrets.IA_ACCESS_7 }}
+          IA_SECRET_7:  ${{ secrets.IA_SECRET_7 }}
+          IA_ACCESS_8:  ${{ secrets.IA_ACCESS_8 }}
+          IA_SECRET_8:  ${{ secrets.IA_SECRET_8 }}
+          IA_ACCESS_9:  ${{ secrets.IA_ACCESS_9 }}
+          IA_SECRET_9:  ${{ secrets.IA_SECRET_9 }}
+          IA_ACCESS_10: ${{ secrets.IA_ACCESS_10 }}
+          IA_SECRET_10: ${{ secrets.IA_SECRET_10 }}
+          IA_ACCESS_11: ${{ secrets.IA_ACCESS_11 }}
+          IA_SECRET_11: ${{ secrets.IA_SECRET_11 }}
+          IA_ACCESS_12: ${{ secrets.IA_ACCESS_12 }}
+          IA_SECRET_12: ${{ secrets.IA_SECRET_12 }}
+          IA_ACCESS_13: ${{ secrets.IA_ACCESS_13 }}
+          IA_SECRET_13: ${{ secrets.IA_SECRET_13 }}
+          IA_ACCESS_14: ${{ secrets.IA_ACCESS_14 }}
+          IA_SECRET_14: ${{ secrets.IA_SECRET_14 }}
+          IA_ACCESS_15: ${{ secrets.IA_ACCESS_15 }}
+          IA_SECRET_15: ${{ secrets.IA_SECRET_15 }}
         run: |
           N=$((IDX+1))
           eval "ACC=\$IA_ACCESS_$N"

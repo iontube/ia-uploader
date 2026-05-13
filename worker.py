@@ -149,13 +149,47 @@ MASALA_CATS = [
     ('Village Aunty',    'village-aunty'),
 ]
 
-# Zones for title/keyword bias. Restricted to user-requested SEO focus:
-# Desi MMS (with /category/desi-mms/ alignment) + XnXX (fallback random category).
-# Porn/Sex anchor word is appended automatically downstream in main loop.
-ZONES = [
-    ('Desi MMS', 'desi-mms'),
-    ('XnXX',     None),
+# Full pinned zone ring: 20 masalatube1 categories + XnXX. Each account is pinned to
+# exactly one zone (deterministic by acctN index), so its entire footprint lives in
+# one /category/<slug>/ SERP — no cross-pollination. Wraps around modulo len for
+# account counts > len(_ZONE_RING).
+_ZONE_RING = [
+    ('Desi Porn',        'desi-porn'),
+    ('Desi MMS',         'desi-mms'),
+    ('Desi Bhabhi',      'desi-bhabhi'),
+    ('Aunty Sex',        'aunty-sex'),
+    ('Aunty XXX',        'aunty-xxx'),
+    ('Hindi BF',         'hindi-bf'),
+    ('Indian XXX',       'indian-xxx'),
+    ('Indian Porn',      'indian-porn'),
+    ('Bengali Sex',      'bengali-sex'),
+    ('Tamil Aunty',      'tamil-aunty'),
+    ('Telugu Sex',       'telugu-sex'),
+    ('Mallu Aunty',      'mallu-aunty'),
+    ('Punjabi Bhabhi',   'punjabi-bhabhi'),
+    ('Bhojpuri Bhabhi',  'bhojpuri-bhabhi'),
+    ('XnXX',             None),
+    ('Hot Web Series',   'hot-web-series'),
+    ('Uncut Web Series', 'uncut-web-series'),
+    ('Masala MMS',       'masala-mms'),
+    ('AuntyMaza',        'auntymaza'),
+    ('Dehati Chudai',    'dehati-chudai'),
+    ('Village Aunty',    'village-aunty'),
 ]
+
+# Legacy compatibility — kept so any caller that still references ZONES doesn't break.
+ZONES = list(_ZONE_RING)
+
+
+def zone_for_label(label):
+    """Map ACCOUNT_LABEL='acctN' deterministically to a (label_text, slug) tuple.
+    Wraps around when N > len(ring) so we can scale past 21 accounts by doubling up."""
+    import re
+    m = re.match(r'acct(\d+)$', label or '')
+    if not m:
+        return random.choice(_ZONE_RING)
+    n = int(m.group(1)) - 1
+    return _ZONE_RING[n % len(_ZONE_RING)]
 
 PRIMARY_ANCHORS = [
     '▶▶ CLICK TO WATCH FULL VIDEO ◀◀',
@@ -295,9 +329,14 @@ def main():
 
     ok = fail = 0
     created = []
+    # Pin zone to the account label — every item from this slot stays inside one
+    # /category/<slug>/ SERP. ACCOUNT_LABEL is set by the workflow ('acct1', 'acct2', ...).
+    pinned_label, pinned_slug = zone_for_label(label)
+    print(f'[{label}] pinned zone: {pinned_label} (slug={pinned_slug or "RANDOM"})')
+
     for i in range(n_items):
         band = random.choice(ETREE_BANDS)
-        zone_label, zone_slug = random.choice(ZONES)
+        zone_label, zone_slug = pinned_label, pinned_slug
         # Always carry "Porn" or "Sex" in the zone keyword (porn-vocab anchor for SERP).
         # Skip if the zone already contains either word to avoid "Desi Porn Porn".
         _zl_low = zone_label.lower()
