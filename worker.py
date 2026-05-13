@@ -191,6 +191,52 @@ def zone_for_label(label):
     n = int(m.group(1)) - 1
     return _ZONE_RING[n % len(_ZONE_RING)]
 
+
+# ===== Anti-detection helpers =====
+
+# Realistic desktop browser UAs. PUT/PATCH from worker rotated through these
+# so the upload pattern doesn't carry the python-urllib/3.x signature.
+_USER_AGENTS = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:132.0) Gecko/20100101 Firefox/132.0',
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0',
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0',
+]
+
+def pick_ua():
+    return random.choice(_USER_AGENTS)
+
+
+# 5% chance per item to emit an "innocent" real-band live recording instead of a
+# porn doorway. Mixes corpus so the account doesn't read as 100% adult-spam to IA ML.
+# Innocent items get neutral title + minimal description, no chip strip, no CTA.
+_INNOCENT_VENUES = [
+    'The Fillmore', 'Red Rocks Amphitheatre', 'Madison Square Garden', 'The Greek Theater',
+    'Brooklyn Bowl', 'The Wiltern', 'Roseland Ballroom', 'Beacon Theater',
+    'Tipitina\'s', 'House of Blues', 'Variety Playhouse', 'The Ryman Auditorium',
+]
+_INNOCENT_CITIES = [
+    'San Francisco', 'New York', 'Chicago', 'Austin', 'Nashville', 'Boston',
+    'Seattle', 'Portland', 'Denver', 'New Orleans', 'Atlanta', 'Philadelphia',
+]
+_INNOCENT_DESC_TPL = [
+    'Soundboard recording from the {band} concert at {venue}, {city}. Full set as performed live. Audience taper&apos;s personal copy uploaded for archive.',
+    'Live recording, {band} at {venue} ({city}). Two-channel stereo. Posted for the trading community.',
+    '{band} live, {venue}, {city}. Captured from the audience, 24-bit/48kHz, lossless.',
+    'Audience recording of {band} at {venue} in {city}. Setlist preserved as performed.',
+]
+
+def gen_innocent(band):
+    venue = random.choice(_INNOCENT_VENUES)
+    city = random.choice(_INNOCENT_CITIES)
+    title = f'{band} Live at {venue} {city} 2026'
+    desc = random.choice(_INNOCENT_DESC_TPL).format(band=band, venue=venue, city=city)
+    return title, desc
+
 PRIMARY_ANCHORS = [
     '▶▶ CLICK TO WATCH FULL VIDEO ◀◀',
     '▶▶ PLAY HD VIDEO NOW ◀◀',
@@ -253,6 +299,10 @@ def s3_put_placeholder(access, secret, identifier, band, title):
     }
     body = b'live show notes\n'
     url = f'https://s3.us.archive.org/{identifier}/notes.txt'
+    # Anti-detection: rotate User-Agent per request so consecutive PUTs don't carry
+    # the python-urllib/3.x signature. IA's abuse classifier flags repeated identical
+    # UAs from the same account as a bot pattern.
+    headers['User-Agent'] = pick_ua()
     # Retry on 503 (rate-limited) with backoff. 401/403 = banned, return immediately.
     last_code, last_body = -1, ''
     for attempt in range(3):
@@ -276,12 +326,22 @@ def s3_put_placeholder(access, secret, identifier, band, title):
     return last_code, last_body
 
 
+def patch_description_raw(item_id, access, secret, desc):
+    """Set description to a pre-built string (used by innocent items). Same retry shape
+    as patch_description below — kept separate so the call site is unambiguous."""
+    return _patch_metadata_description(item_id, access, secret, desc)
+
+
 def patch_description(item_id, access, secret, kw_line, target_url, anchor):
     """Set rich HTML description via metadata API.
     Brand-new buckets race-condition: metadata not ready for ~5-10s after PUT, returns
     400. Retry with progressive backoff (3s, 6s, 12s) and toggle add/replace ops.
     """
     desc = build_description(kw_line, target_url, anchor)
+    return _patch_metadata_description(item_id, access, secret, desc)
+
+
+def _patch_metadata_description(item_id, access, secret, desc):
     last_err = None
     for attempt in range(3):
         for op in ('add', 'replace'):
@@ -295,7 +355,10 @@ def patch_description(item_id, access, secret, kw_line, target_url, anchor):
             req = urllib.request.Request(
                 f'https://archive.org/metadata/{item_id}',
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'},
+                headers={
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'User-Agent': pick_ua(),  # rotate UA on PATCH too
+                },
                 method='POST',
             )
             try:
@@ -334,15 +397,24 @@ def main():
     pinned_label, pinned_slug = zone_for_label(label)
     print(f'[{label}] pinned zone: {pinned_label} (slug={pinned_slug or "RANDOM"})')
 
+    consec_503 = 0  # bail if we see 3 consecutive 503s — IA throttle, no point continuing
+
     for i in range(n_items):
         band = random.choice(ETREE_BANDS)
-        zone_label, zone_slug = pinned_label, pinned_slug
-        # Always carry "Porn" or "Sex" in the zone keyword (porn-vocab anchor for SERP).
-        # Skip if the zone already contains either word to avoid "Desi Porn Porn".
-        _zl_low = zone_label.lower()
-        if 'porn' not in _zl_low and 'sex' not in _zl_low:
-            zone_label = f'{zone_label} {random.choice(("Porn", "Sex"))}'
-        title = f'{gen_title(zone_label)} {random.randint(100, 999)}'
+
+        # 5% chance per item to publish an "innocent" real-band live recording instead
+        # of a doorway. Dilutes the account's corpus so it doesn't read as 100% adult-spam.
+        is_innocent = random.random() < 0.05
+
+        if is_innocent:
+            title, neutral_desc = gen_innocent(band)
+        else:
+            zone_label, zone_slug = pinned_label, pinned_slug
+            _zl_low = zone_label.lower()
+            if 'porn' not in _zl_low and 'sex' not in _zl_low:
+                zone_label = f'{zone_label} {random.choice(("Porn", "Sex"))}'
+            title = f'{gen_title(zone_label)} {random.randint(100, 999)}'
+
         suffix = f'{label}-{int(time.time())%100000}-{random.randint(100, 9999)}'
         today = time.strftime('%Y-%m-%d')
         identifier = f'{band}{today}.{suffix}'
@@ -354,26 +426,38 @@ def main():
             if code in (401, 403):
                 print(f'[{label}] BANNED — aborting')
                 break
+            if code == 503:
+                consec_503 += 1
+                if consec_503 >= 3:
+                    print(f'[{label}] 3 consecutive 503s — auto-retire this run')
+                    break
             continue
+        consec_503 = 0  # reset streak on any successful PUT
 
         # PATCH description after upload settles. Rotate keyword line + target category per item.
         # Sleep 9s pre-PATCH — fresh-bucket metadata isn't queryable for ~5-10s after PUT;
         # 6s was tight on day-old accounts and triggered HTTP 400 races regularly.
-        kw_line = gen_kw_line(zone_label)
-        # Align player CTA with the chosen zone where possible; fallback random for XnXX.
-        slug = zone_slug if zone_slug else random.choice(MASALA_CATS)[1]
-        target_url = HOME_URL + 'category/' + slug + '/'
-        anchor = random.choice(PRIMARY_ANCHORS)
         time.sleep(9.0)
-        patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
+        if is_innocent:
+            # Innocent items get plain text description (no player, no chip strip)
+            patched, err = patch_description_raw(identifier, access, secret, neutral_desc)
+        else:
+            kw_line = gen_kw_line(zone_label)
+            slug = zone_slug if zone_slug else random.choice(MASALA_CATS)[1]
+            target_url = HOME_URL + 'category/' + slug + '/'
+            anchor = random.choice(PRIMARY_ANCHORS)
+            patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
         if patched:
             ok += 1
             created.append({
                 'id': identifier, 'band': band, 'title': title,
-                'kw': kw_line[:40], 'target': target_url,
+                'kw': 'innocent' if is_innocent else kw_line[:40],
+                'target': 'n/a' if is_innocent else target_url,
+                'innocent': is_innocent,
             })
             if (i + 1) % 5 == 0 or i < 3:
-                print(f'  [{i+1}/{n_items}] {identifier} ok')
+                tag = ' [INNOCENT]' if is_innocent else ''
+                print(f'  [{i+1}/{n_items}] {identifier} ok{tag}')
         else:
             fail += 1
             print(f'  [{i+1}/{n_items}] {identifier}: PATCH FAIL ({err})')
