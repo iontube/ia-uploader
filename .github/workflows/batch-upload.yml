@@ -5,10 +5,10 @@ on:
       items_per_run:
         description: "Items per account per run"
         required: true
-        default: "50"
-  # Non-stop: every 15 min × 6 accts × 30 items = 180 items/run = ~17000/day
+        default: "5"
+  # Every 10 min × 15 accts × 5 items = 75 items/run = ~10800/day max.
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "*/10 * * * *"
 
 # Allow parallel runs — each gets unique concurrency group via run_id.
 # Concurrent runs hit same 6 accounts; 0.8s sleep per upload keeps per-account QPS low.
