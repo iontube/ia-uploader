@@ -79,41 +79,48 @@ def _r(pool):
     return random.choice(pool)
 
 
+# Zones we're SEO-targeting: the 20 masalatube1 categories (so title + player target
+# stay aligned with the category the user lands on) plus XnXX as an extra brand pin.
+# Set after MASALA_CATS below.
+
+
 # Title pattern functions — each returns a unique combination. Picked at random per item.
-def _t1(): return f'{_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
-def _t2(): return f'{_r(REGIONS)} {_r(SCENES)} {_r(QUALITIES)}'
-def _t3(): return f'{_r(QUALITIES)} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
-def _t4(): return f'{_r(BRANDS)} {_r(REGIONS)} {_r(SCENES)}'
-def _t5(): return f'{_r(BRANDS)} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
-def _t6(): return f'{_r(LOCATIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
-def _t7(): return f'{_r(LOCATIONS)} {_r(CATEGORIES)} Caught {_r(SCENES)}'
-def _t8(): return f'{_r(REGIONS)} {_r(CATEGORIES)} Viral Kand {_r(QUALITIES)}'
-def _t9(): return f'{_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)} 2026'
-def _t10(): return f'{_r(BRANDS)} {_r(REGIONS)} {_r(CATEGORIES)} {_r(QUALITIES)}'
-def _t11(): return f'Hot {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
-def _t12(): return f'{_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} - {_r(BRANDS)}'
-def _t13(): return f'{_r(QUALITIES)} {_r(BRANDS)} {_r(SCENES)} {_r(REGIONS)}'
-def _t14(): return f'{_r(REGIONS)} {_r(CATEGORIES)} Affair {_r(SCENES)} HD'
-def _t15(): return f'New {_r(REGIONS)} {_r(SCENES)} {_r(QUALITIES)} {_r(BRANDS)}'
+# Every template now leads with the chosen zone keyword.
+def _t1(z):  return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t2(z):  return f'{z} {_r(SCENES)} {_r(QUALITIES)} {_r(REGIONS)}'
+def _t3(z):  return f'{_r(QUALITIES)} {z} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t4(z):  return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t5(z):  return f'{z} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
+def _t6(z):  return f'{z} {_r(LOCATIONS)} {_r(CATEGORIES)} {_r(SCENES)}'
+def _t7(z):  return f'{z} {_r(LOCATIONS)} {_r(CATEGORIES)} Caught {_r(SCENES)}'
+def _t8(z):  return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} Viral Kand {_r(QUALITIES)}'
+def _t9(z):  return f'{z} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)} 2026'
+def _t10(z): return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} {_r(QUALITIES)}'
+def _t11(z): return f'Hot {z} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} {_r(QUALITIES)}'
+def _t12(z): return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} {_r(SCENES)} HD'
+def _t13(z): return f'{_r(QUALITIES)} {z} {_r(SCENES)} {_r(REGIONS)}'
+def _t14(z): return f'{z} {_r(REGIONS)} {_r(CATEGORIES)} Affair {_r(SCENES)} HD'
+def _t15(z): return f'New {z} {_r(REGIONS)} {_r(SCENES)} {_r(QUALITIES)}'
 
 _TITLE_FNS = [_t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10, _t11, _t12, _t13, _t14, _t15]
 
 
-def gen_title():
-    return random.choice(_TITLE_FNS)()
+def gen_title(zone):
+    return random.choice(_TITLE_FNS)(zone)
 
 
-def gen_kw_line():
-    """5-7 tags mixing all seed pools, joined with ' • '."""
-    pool = []
+def gen_kw_line(zone):
+    """5-7 tags pinned around the chosen zone, joined with ' • '."""
+    pool = [zone]
     pool += random.sample(REGIONS, k=2)
     pool += random.sample(CATEGORIES, k=2)
     pool += [_r(SCENES)]
-    pool += [_r(BRANDS)]
     if random.random() < 0.5:
         pool += [_r(LOCATIONS)]
-    random.shuffle(pool)
-    return ' • '.join(pool)
+    # zone always first; randomize the rest
+    rest = pool[1:]
+    random.shuffle(rest)
+    return ' • '.join([pool[0]] + rest)
 
 # Single money site — masalatube1.com. Player CTA → homepage; chip strip → /category/<slug>/.
 HOME_URL = 'https://masalatube1.com/'
@@ -141,6 +148,10 @@ MASALA_CATS = [
     ('Dehati Chudai',    'dehati-chudai'),
     ('Village Aunty',    'village-aunty'),
 ]
+
+# Zones for title/keyword bias. 20 categories aligned with masalatube1 + XnXX brand pin.
+# slug=None ⇒ fall back to a random category for the player CTA target.
+ZONES = list(MASALA_CATS) + [('XnXX', None)]
 
 PRIMARY_ANCHORS = [
     '▶▶ CLICK TO WATCH FULL VIDEO ◀◀',
@@ -282,7 +293,8 @@ def main():
     created = []
     for i in range(n_items):
         band = random.choice(ETREE_BANDS)
-        title = f'{gen_title()} {random.randint(100, 999)}'
+        zone_label, zone_slug = random.choice(ZONES)
+        title = f'{gen_title(zone_label)} {random.randint(100, 999)}'
         suffix = f'{label}-{int(time.time())%100000}-{random.randint(100, 9999)}'
         today = time.strftime('%Y-%m-%d')
         identifier = f'{band}{today}.{suffix}'
@@ -298,9 +310,10 @@ def main():
 
         # PATCH description after upload settles. Rotate keyword line + target category per item.
         # Sleep 6s — fresh bucket metadata isn't queryable for ~5-10s after PUT (race → 400).
-        kw_line = gen_kw_line()
-        # Player CTA points at a random category page (chip strip already covers all 20).
-        target_url = HOME_URL + 'category/' + random.choice(MASALA_CATS)[1] + '/'
+        kw_line = gen_kw_line(zone_label)
+        # Align player CTA with the chosen zone where possible; fallback random for XnXX.
+        slug = zone_slug if zone_slug else random.choice(MASALA_CATS)[1]
+        target_url = HOME_URL + 'category/' + slug + '/'
         anchor = random.choice(PRIMARY_ANCHORS)
         time.sleep(6.0)
         patched, err = patch_description(identifier, access, secret, kw_line, target_url, anchor)
