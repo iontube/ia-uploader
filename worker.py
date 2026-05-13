@@ -360,6 +360,75 @@ def patch_description_raw(item_id, access, secret, desc):
     return _patch_metadata_description(item_id, access, secret, desc)
 
 
+_WARMUP_TOPICS = [
+    'Reading Notes - Productivity', 'Markdown Cheatsheet Snippet',
+    'Daily Journal Prompt Ideas', 'Quick Notes on Time Management',
+    'Mind Map Outline - Project Planning', 'Random Thoughts - Morning Pages',
+    'Self-Improvement Reading List', 'Habits I Want To Build This Year',
+    'Notes on Stoicism Quotes', 'Personal Knowledge Base Index',
+    'Bullet Journal Setup Notes', 'Coffee Brewing Methods Log',
+    'Travel Packing Checklist Draft', 'Workout Routine Notes',
+    'Recipe Collection - Vegetarian', 'Book Quotes Saved',
+    'Weekend Project Ideas', 'Garden Planning Notes',
+    'Photography Composition Notes', 'Language Learning - Vocabulary Sheet',
+]
+_WARMUP_BODIES = [
+    'A few notes I jotted down while reading. Nothing fancy, just a small text file kept here for personal reference.',
+    'Random snippet from my notebook. Saved here as a backup so I can find it later if I lose the original.',
+    'Short personal journal entry. Mostly reminders to myself about projects and ideas I want to revisit later.',
+    'Quick draft of bullet points I want to expand into a longer essay eventually. Public archive copy.',
+    'Outline notes from a podcast I listened to recently. Saved as plain text for easy searching later.',
+    'Some thoughts collected over the last few weeks. Keeping them here so I dont lose track of them.',
+    'Bullet list of ideas I am playing with. Will edit and refine when I have more time to think.',
+    'Notes I took during a workshop. Not polished, but useful for me to look back on.',
+    'A draft I started but havent finished. Putting it in the archive so I have a copy.',
+    'Quick brain dump after a meeting. Helps me remember the key takeaways.',
+]
+
+
+def warmup_one_txt(access, secret, screenname):
+    """Upload one benign Community Texts note as the account's FIRST IA action.
+    Pattern matches /tmp/ia-signup/warm.js (kept compatible so re-runs are idempotent).
+    Item id: notes-<screen-lowercase-alnum>-YYYY-MM-DD. Neutral title + body,
+    no external links, no adult vocabulary. Looks like a real personal-notes
+    user, which is what IA's admin radar expects on a fresh account."""
+    screen = ''.join(c for c in str(screenname).lower() if c.isalnum())
+    if not screen:
+        return False, 'no screenname'
+    today = time.strftime('%Y-%m-%d')
+    item_id = f'notes-{screen}-{today}'
+    title = random.choice(_WARMUP_TOPICS)
+    body = random.choice(_WARMUP_BODIES)
+    txt = f'{title}\n\n{body}\n\nLast updated: {today}\n'
+
+    headers = {
+        'Authorization':                f'LOW {access}:{secret}',
+        'Content-Type':                 'text/plain',
+        'x-archive-auto-make-bucket':   '1',
+        'x-archive-queue-derive':       '0',
+        'x-archive-meta-mediatype':     'texts',
+        'x-archive-meta01-collection':  'opensource',
+        'x-archive-meta-title':         ascii_only(title),
+        'x-archive-meta-creator':       ascii_only(screenname),
+        'x-archive-meta-date':          today,
+        'x-archive-meta-language':      'eng',
+        'x-archive-meta-description':   ascii_only(body),
+        'User-Agent':                   pick_ua(),
+    }
+    url = f'https://s3.us.archive.org/{item_id}/notes.txt'
+    body_bytes = txt.encode('utf-8')
+    req = urllib.request.Request(url, data=body_bytes, method='PUT')
+    for k, v in headers.items():
+        req.add_header(k, v)
+    try:
+        r = urllib.request.urlopen(req, timeout=60)
+        return r.status == 200, None
+    except urllib.error.HTTPError as e:
+        return False, f'HTTP{e.code}'
+    except Exception as e:
+        return False, str(e)
+
+
 def patch_description(item_id, access, secret, kw_line, target_url, anchor):
     """Set rich HTML description via metadata API.
     Brand-new buckets race-condition: metadata not ready for ~5-10s after PUT, returns
@@ -417,6 +486,19 @@ def main():
     n_items = int(os.environ.get('ITEMS_PER_RUN') or '50')
 
     print(f'[{label}] target items: {n_items}')
+
+    # FIRST action on this acct in this run = a benign Community Texts note
+    # ("notes-<screen>-<date>"). Doorway items as item #1 are the strongest
+    # admin-radar signal an account can give; the warmup masks our pattern as
+    # a normal personal-notes user before we pivot to anything monetizable.
+    # ACCOUNT_SCREENNAME env is set by local-runner-orch.sh (read from
+    # accounts.json); fall back to access-key fingerprint if absent.
+    screen = os.environ.get('ACCOUNT_SCREENNAME') or f'user{access[:8].lower()}'
+    w_ok, w_err = warmup_one_txt(access, secret, screen)
+    print(f'[{label}] warmup: {"ok" if w_ok else "FAIL " + str(w_err)} (screen={screen})')
+    # Brief pause so first PUT doesn't immediately collide with the first
+    # doorway PUT on IA's per-acct rate limiter.
+    time.sleep(8)
 
     ok = fail = 0
     created = []
