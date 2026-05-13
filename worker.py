@@ -352,12 +352,17 @@ def patch_description(item_id, access, secret, kw_line, target_url, anchor, asse
 
 
 def ensure_asset_item(access, secret, label):
-    """Make sure this account has its CTA asset item (cta-assets-<label>).
-    Created once per account; subsequent runs detect existence and skip.
+    """Make sure this account has its CTA asset item (cta-assets-<label>-<accfp>).
+    Created once per IA account; subsequent runs detect existence and skip.
     Asset is mediatype=image + opensource_image → IA stamps NOINDEX on it,
     so it stays out of search and out of admin scrutiny. Returns the gif URL
-    or None if creation failed (caller falls back to a no-image description)."""
-    asset_id = f'cta-assets-{label}'
+    or None if creation failed (caller falls back to a no-image description).
+
+    accfp = first 8 chars of access key (lowercase + digits). IA buckets are
+    global, so two parallel repos (iontube vs v2) both having "acct1" would
+    collide on plain "cta-assets-acct1"; the fingerprint disambiguates."""
+    accfp = ''.join(c for c in access[:8] if c.isalnum()).lower()
+    asset_id = f'cta-assets-{label}-{accfp}'
     asset_url = f'https://archive.org/download/{asset_id}/cta-play.gif'
 
     # Already exists? GET metadata, look for cta-play.gif in file list.
