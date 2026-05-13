@@ -149,9 +149,13 @@ MASALA_CATS = [
     ('Village Aunty',    'village-aunty'),
 ]
 
-# Zones for title/keyword bias. 20 categories aligned with masalatube1 + XnXX brand pin.
-# slug=None ⇒ fall back to a random category for the player CTA target.
-ZONES = list(MASALA_CATS) + [('XnXX', None)]
+# Zones for title/keyword bias. Restricted to user-requested SEO focus:
+# Desi MMS (with /category/desi-mms/ alignment) + XnXX (fallback random category).
+# Porn/Sex anchor word is appended automatically downstream in main loop.
+ZONES = [
+    ('Desi MMS', 'desi-mms'),
+    ('XnXX',     None),
+]
 
 PRIMARY_ANCHORS = [
     '▶▶ CLICK TO WATCH FULL VIDEO ◀◀',
