@@ -28,10 +28,10 @@ on:
         description: "Override rotation offset (default = GITHUB_RUN_NUMBER)"
         required: false
         default: ""
-  # Self-chained: reduce job triggers next run after 150s. Cron kept as failsafe
-  # in case a chain link breaks.
+  # Self-chained: reduce job triggers next run after 150s. Hourly cron is
+  # failsafe only — if the chain breaks, it restarts within ~1h.
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
 
 permissions:
   contents: write     # so the final reduce job can commit banned.json
