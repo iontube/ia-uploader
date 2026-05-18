@@ -46,8 +46,13 @@ jobs:
           node-version: "20"
 
       - name: Install register deps (used only on fallback)
-        working-directory: ./register
-        run: npm ci --silent --no-audit --no-fund || npm install --silent --no-audit --no-fund
+        run: |
+          if [ -d ./register ] && [ -f ./register/package.json ]; then
+            cd ./register
+            npm ci --silent --no-audit --no-fund || npm install --silent --no-audit --no-fund
+          else
+            echo "::notice::register/ dir not present — pool-only mode (register fallback unavailable)"
+          fi
 
       - name: Pick acct (pool or register fallback)
         id: pick
@@ -102,12 +107,16 @@ jobs:
 
       - name: Register fresh acct (REGISTER mode only)
         if: env.MODE == 'REGISTER'
-        working-directory: ./register
         env:
           ZOHO_USER: ${{ secrets.ZOHO_USER }}
           ZOHO_PASS: ${{ secrets.ZOHO_PASS }}
           STORE:     ./fresh.json
         run: |
+          if [ ! -f ./register/register.js ]; then
+            echo "::warning::register/ not committed in this repo — skipping slot ${{ matrix.slot }}"
+            echo "SKIP=1" >> "$GITHUB_ENV"; exit 0
+          fi
+          cd ./register
           echo '{"accounts":[]}' > ./fresh.json
           set +e
           timeout 240 node register.js 1
