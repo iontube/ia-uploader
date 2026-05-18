@@ -65,8 +65,10 @@ PANELS = json.load(open(PANEL_F))['sites']
 
 # Mandatory adult KW that MUST appear in every title (user explicit list).
 MANDATORY_KW = [
-    'xnxx', 'xxx', 'porn', 'sex', 'video', 'videos', 'hot',
+    'xnxx', 'xnxx', 'xnxx',          # x3 to push xnxx density (user 2026-05-18)
+    'xxx', 'porn', 'sex', 'video', 'videos', 'hot',
     'desi mms porn', 'auntymaza porn', 'desi mms sex',
+    'xnxx hot', 'xnxx hd',           # extra anchored xnxx variants
 ]
 
 # Arabic adult-relevant KW (user explicit request 2026-05-18).
@@ -138,24 +140,29 @@ def build_aggressive_title(rng: random.Random, zone_label: str) -> str:
        ++!🍆(XXX ok xxx)@> +SEX~VIDEOS~XNXX) Village Girl In ...
     Every title contains ALL mandatory KW (in mixed case) + 1-2 Arabic KW + emoji.
     ≤ 240 chars (IA truncates ~255)."""
-    # ALL 10 mandatory KW MUST appear. Split 5+5 between two chaos clusters and
-    # force use_all=True so chaos_cluster keeps every word (no random subset drop).
+    # ALL mandatory KW MUST appear. Split between two chaos clusters and force
+    # use_all=True so chaos_cluster keeps every word (no random subset drop).
     kw = list(MANDATORY_KW); rng.shuffle(kw)
     arabic1, arabic2 = rng.sample(ARABIC_KW, 2)
     e_head = ''.join(rng.sample(EMOJI_CHAOS, k=rng.randint(1, 2)))
     e_mid  = rng.choice(EMOJI_CHAOS)
     e_tail = ''.join(rng.sample(EMOJI_CHAOS, k=rng.randint(1, 2)))
 
-    c1_pool = kw[:5] + [arabic1]
-    c2_pool = kw[5:] + [arabic2]
+    half = len(kw) // 2
+    c1_pool = kw[:half] + [arabic1]
+    c2_pool = kw[half:] + [arabic2]
     cluster_head = chaos_cluster(rng, c1_pool, use_all=True)
     cluster_tail = chaos_cluster(rng, c2_pool, use_all=True)
 
-    # Readable middle — zone + region + cat + scene words, no chaos
+    # Readable middle — zone + region + cat + scene words. Insert "xnxx" tokens
+    # in a couple of slots so the title carries xnxx beyond the chaos clusters
+    # (user pushed for more xnxx density 2026-05-18).
     region = rng.choice(W.REGIONS)
     cat    = rng.choice(W.CATEGORIES)
     scene  = rng.choice(W.SCENES)
-    middle = f'{zone_label} {region} {cat} {scene}'
+    xn_variants = ['xnxx', 'Xnxx', 'XNXX', 'xNxx']
+    x1, x2 = rng.choice(xn_variants), rng.choice(xn_variants)
+    middle = f'{zone_label} {x1} {region} {cat} {x2} {scene}'
 
     title = f'{e_head}{cluster_head} {middle} {e_mid}{cluster_tail}{e_tail}'
     return title[:240]
@@ -186,6 +193,20 @@ def build_player_description(rng: random.Random, zone_label: str, kw_line: str,
     subtitle = rng.choice(W._SUBTITLE_POOL)
     chaos    = build_chaos_text(rng, zone_label)
     t = target_url
+    # xnxx-heavy anchor line (user pushed for more xnxx 2026-05-18)
+    xn_anchor_variants = [
+        'xnxx hot indian video',
+        'desi xnxx hd porn videos',
+        'xnxx full hd sex video',
+        'aunty xnxx mms leaked',
+        'xnxx bhabhi sex video hd',
+        'xnxx xxx desi mms full',
+        'hindi xnxx hot porn aunty',
+        'tamil xnxx mallu aunty sex',
+        'xnxx bengali boudi sex video',
+        'xnxx desi mms porn 2026',
+    ]
+    xn_line = rng.choice(xn_anchor_variants)
     return (
         f'<div style="background:{pal["bg"]};border:6px solid {pal["border"]};padding:60px 20px;text-align:center">'
         f'<p style="margin:0 auto 30px"><a href="{t}" style="color:{pal["cta"]};background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid {pal["cta"]};text-decoration:none" rel="ugc nofollow">{headline}</a></p>'
@@ -193,6 +214,7 @@ def build_player_description(rng: random.Random, zone_label: str, kw_line: str,
         f'<p style="margin:18px auto 28px;color:#fde68a;font-size:22px;font-weight:bold;line-height:1.4;max-width:760px">{chaos}</p>'
         f'<p style="margin:24px 0"><a href="{t}" style="color:{pal["head"]};font-size:44px;font-weight:bold;text-decoration:none" rel="ugc nofollow">{h2}</a></p>'
         f'<p style="margin:20px 0"><a href="{t}" style="color:{pal["accent"]};font-size:36px;font-weight:bold;text-decoration:underline" rel="ugc nofollow">{anchor}</a></p>'
+        f'<p style="margin:14px 0"><a href="{t}" style="color:{pal["cta"]};font-size:30px;font-weight:bold;text-decoration:underline" rel="ugc nofollow">{xn_line}</a></p>'
         f'<p style="margin:24px 0 12px"><a href="{t}" style="color:{pal["mid"]};font-size:24px;font-weight:bold;text-decoration:none" rel="ugc nofollow">{kw_line}</a></p>'
         f'<p style="margin:8px 0 24px"><a href="{t}" style="color:#9ca3af;font-size:18px;text-decoration:none" rel="ugc nofollow">{subtitle}</a></p>'
         '</div>'
