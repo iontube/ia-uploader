@@ -9,6 +9,10 @@ on:
         description: "Items per account this run"
         required: true
         default: "5"
+      burst_size:
+        description: "Items inside one burst (overrides BURST_SIZE=5)"
+        required: true
+        default: "5"
       burst_pause:
         description: "Pause (s) between bursts inside one job"
         required: true
@@ -108,7 +112,7 @@ jobs:
         if: env.SKIP != '1'
         working-directory: ./etree
         env:
-          BURST_SIZE:  "5"
+          BURST_SIZE:  ${{ github.event.inputs.burst_size || '5' }}
           BURST_PAUSE: ${{ github.event.inputs.burst_pause || '300' }}
           ITEM_GAP:    "4"
           MAX_ITEMS:   ${{ github.event.inputs.max_items || '5' }}
