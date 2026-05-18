@@ -174,7 +174,9 @@ def build_aggressive_title(rng: random.Random, zone_label: str) -> str:
     middle = f'{zone_label} {x1} {region} {cat} {x2} {scene}'
 
     title = f'{e_head}{cluster_head} {middle} {e_mid}{cluster_tail}{e_tail}'
-    return title[:240]
+    # ensure SCROLL+CLICK IMAGE always appended (truncate title body to fit if needed)
+    suffix = ' SCROLL+CLICK IMAGE'
+    return (title[:240 - len(suffix)] + suffix)
 
 
 def make_ident(rng: random.Random, band: str) -> str:
