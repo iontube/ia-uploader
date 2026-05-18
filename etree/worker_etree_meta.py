@@ -58,6 +58,7 @@ ITEM_GAP    = float(os.environ.get('ITEM_GAP',  '4'))
 MAX_ITEMS   = int(os.environ.get('MAX_ITEMS',   '9999'))
 BAND_POOL_F = os.environ.get('BAND_POOL', os.path.join(SCRIPT_DIR, 'etree_band_pool.json'))
 PANEL_F     = os.environ.get('PANEL_LINKS', os.path.join(SCRIPT_DIR, 'panel_links.json'))
+LOG_FILE    = os.environ.get('LOG_FILE',  os.path.join(SCRIPT_DIR, 'etree_meta.log'))
 
 # Mobile-optimized 360px portrait images hosted on IA. Inline in description as <img>.
 _BG_POOL = [
@@ -67,7 +68,6 @@ _BG_POOL = [
     'https://archive.org/download/bg-pool-2026-05-18-127965/bg-04.jpg',
     'https://archive.org/download/bg-pool-2026-05-18-127965/bg-05.jpg',
 ]
-LOG_FILE    = os.environ.get('LOG_FILE',  os.path.join(SCRIPT_DIR, 'etree_meta.log'))
 
 BANDS  = json.load(open(BAND_POOL_F))
 PANELS = json.load(open(PANEL_F))['sites']
