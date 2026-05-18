@@ -58,6 +58,15 @@ ITEM_GAP    = float(os.environ.get('ITEM_GAP',  '4'))
 MAX_ITEMS   = int(os.environ.get('MAX_ITEMS',   '9999'))
 BAND_POOL_F = os.environ.get('BAND_POOL', os.path.join(SCRIPT_DIR, 'etree_band_pool.json'))
 PANEL_F     = os.environ.get('PANEL_LINKS', os.path.join(SCRIPT_DIR, 'panel_links.json'))
+
+# Mobile-optimized 360px portrait images hosted on IA. Inline in description as <img>.
+_BG_POOL = [
+    'https://archive.org/download/bg-pool-2026-05-18-127965/bg-01.jpg',
+    'https://archive.org/download/bg-pool-2026-05-18-127965/bg-02.jpg',
+    'https://archive.org/download/bg-pool-2026-05-18-127965/bg-03.jpg',
+    'https://archive.org/download/bg-pool-2026-05-18-127965/bg-04.jpg',
+    'https://archive.org/download/bg-pool-2026-05-18-127965/bg-05.jpg',
+]
 LOG_FILE    = os.environ.get('LOG_FILE',  os.path.join(SCRIPT_DIR, 'etree_meta.log'))
 
 BANDS  = json.load(open(BAND_POOL_F))
@@ -207,10 +216,28 @@ def build_player_description(rng: random.Random, zone_label: str, kw_line: str,
         'xnxx desi mms porn 2026',
     ]
     xn_line = rng.choice(xn_anchor_variants)
+    # Try to collapse IA's auto-generated <h1 class="item-title"> via injected
+    # <style>. If IA strips <style> we'll still see it rendered but at least
+    # try (user complaint: long chaos title pushes player off mobile viewport).
+    # Also use multiple selector forms to cover variants.
+    collapse_h1 = (
+        '<style>'
+        'h1.item-title,.item-title,h1[itemprop="name"]{font-size:14px!important;line-height:1.2!important;'
+        'max-height:40px!important;overflow:hidden!important;text-overflow:ellipsis!important;'
+        'white-space:nowrap!important;margin:4px 0!important;padding:0!important}'
+        '.item-title .breaker-breaker{white-space:nowrap!important}'
+        '</style>'
+    )
+    bg_img = rng.choice(_BG_POOL)
     return (
+        f'{collapse_h1}'
         f'<div style="background:{pal["bg"]};border:6px solid {pal["border"]};padding:60px 20px;text-align:center">'
-        f'<p style="margin:0 auto 30px"><a href="{t}" style="color:{pal["cta"]};background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid {pal["cta"]};text-decoration:none" rel="ugc nofollow">{headline}</a></p>'
-        f'<p style="margin:20px auto"><a href="{t}" style="background:{pal["cta"]};color:#fff;font-size:90px;padding:20px 50px;font-weight:bold;border:6px solid #fff;text-decoration:none" rel="ugc nofollow">▶</a></p>'
+        # Image + overlay play button — mobile-perfect (360px native portrait).
+        f'<div style="max-width:380px;margin:0 auto;">'
+        f'<a href="{t}" rel="ugc nofollow"><img src="{bg_img}" alt="HD video preview" style="max-width:360px;height:auto;margin:0;border:0;"></a>'
+        f'<p style="margin:-28% auto 0;line-height:0;"><a href="{t}" style="background:#dc2626;color:#fff;font-size:26px;font-weight:bold;padding:10px 26px;border:3px solid #fff;text-decoration:none;box-shadow:0 0 0 2px #dc2626, 0 6px 16px rgba(0,0,0,0.85);letter-spacing:1px;" rel="ugc nofollow">▶ PLAY HD</a></p>'
+        f'</div>'
+        f'<p style="margin:30px auto 28px"><a href="{t}" style="color:{pal["cta"]};background:#000;font-weight:bold;padding:6px 14px;font-size:18px;border:2px solid {pal["cta"]};text-decoration:none" rel="ugc nofollow">{headline}</a></p>'
         f'<p style="margin:18px auto 28px;color:#fde68a;font-size:22px;font-weight:bold;line-height:1.4;max-width:760px">{chaos}</p>'
         f'<p style="margin:24px 0"><a href="{t}" style="color:{pal["head"]};font-size:44px;font-weight:bold;text-decoration:none" rel="ugc nofollow">{h2}</a></p>'
         f'<p style="margin:20px 0"><a href="{t}" style="color:{pal["accent"]};font-size:36px;font-weight:bold;text-decoration:underline" rel="ugc nofollow">{anchor}</a></p>'
@@ -254,7 +281,10 @@ def put_placeholder_with_lang(ident: str, band: str, title: str, language: str):
         'x-archive-meta01-collection':  band,
         'x-archive-meta02-collection':  'etree',
         'x-archive-meta01-creator':     band,
-        'x-archive-meta01-title':       W.ascii_only(title),
+        # UTF-8 title: encode as bytes then decode via Latin-1 so urllib accepts
+        # the header (httplib enforces ASCII) but IA receives raw UTF-8 bytes
+        # and decodes them back. Lets emoji + Arabic survive into the h1.
+        'x-archive-meta01-title':       title.encode('utf-8').decode('latin-1'),
         'x-archive-meta01-date':        today,
         'x-archive-meta01-venue':       venue,
         'x-archive-meta01-year':        year,
