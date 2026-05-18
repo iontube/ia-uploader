@@ -13,6 +13,10 @@ on:
         description: "Pause (s) between bursts inside one job"
         required: true
         default: "300"
+      only_slot:
+        description: "Run only this matrix slot (1-10). Empty = all 10."
+        required: false
+        default: ""
   schedule:
     - cron: "0 * * * *"   # top of every hour
 
@@ -34,9 +38,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Skip if only_slot set and not this slot
+        env:
+          IDX: ${{ matrix.idx }}
+          ONLY: ${{ github.event.inputs.only_slot }}
+        run: |
+          if [ -n "$ONLY" ] && [ "$IDX" != "$ONLY" ]; then
+            echo "SKIP=1" >> "$GITHUB_ENV"
+            echo "::notice::skipping slot $IDX (only_slot=$ONLY)"
+          fi
+
       - uses: actions/checkout@v4
+        if: env.SKIP != '1'
 
       - name: Pick IA credentials for matrix idx
+        if: env.SKIP != '1'
         env:
           IDX: ${{ matrix.idx }}
           IA_ACCESS_1:  ${{ secrets.IA_ACCESS_1 }}
