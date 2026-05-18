@@ -28,8 +28,10 @@ on:
         description: "Override rotation offset (default = GITHUB_RUN_NUMBER)"
         required: false
         default: ""
+  # Self-chained: reduce job triggers next run after 150s. Cron kept as failsafe
+  # in case a chain link breaks.
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write     # so the final reduce job can commit banned.json
@@ -220,7 +222,19 @@ jobs:
           git add etree/banned.json etree/live.json
           if git diff --cached --quiet; then
             echo "no changes"
-            exit 0
+          else
+            git commit -m "etree-meta: update banned/live pool (run ${{ github.run_id }})"
+            git push origin main
           fi
-          git commit -m "etree-meta: update banned/live pool (run ${{ github.run_id }})"
-          git push origin main
+
+      - name: Chain next run (150s pause)
+        env:
+          CHAIN_PAT: ${{ secrets.CHAIN_PAT }}
+        run: |
+          sleep 150
+          curl -s -X POST \
+            -H "Authorization: Bearer $CHAIN_PAT" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/etree-meta.yml/dispatches \
+            -d '{"ref":"main","inputs":{"max_items":"5","burst_size":"5","burst_pause":"300"}}' \
+            -w "\nHTTP %{http_code}\n"
