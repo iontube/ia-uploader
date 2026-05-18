@@ -1,0 +1,112 @@
+name: etree-meta — chaos doorways on IA
+
+# Runs every 60 min: 10-acct matrix × 5 items/acct = 50 items/cycle.
+# Each runner gets its own IA acct creds. Manual dispatch supported.
+on:
+  workflow_dispatch:
+    inputs:
+      max_items:
+        description: "Items per account this run"
+        required: true
+        default: "5"
+      burst_pause:
+        description: "Pause (s) between bursts inside one job"
+        required: true
+        default: "300"
+  schedule:
+    - cron: "0 * * * *"   # top of every hour
+
+permissions:
+  contents: read
+
+# Don't cancel a still-running run when a new one starts.
+concurrency:
+  group: etree-meta-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    strategy:
+      fail-fast: false
+      max-parallel: 10
+      matrix:
+        idx: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick IA credentials for matrix idx
+        env:
+          IDX: ${{ matrix.idx }}
+          IA_ACCESS_1:  ${{ secrets.IA_ACCESS_1 }}
+          IA_SECRET_1:  ${{ secrets.IA_SECRET_1 }}
+          IA_ACCESS_2:  ${{ secrets.IA_ACCESS_2 }}
+          IA_SECRET_2:  ${{ secrets.IA_SECRET_2 }}
+          IA_ACCESS_3:  ${{ secrets.IA_ACCESS_3 }}
+          IA_SECRET_3:  ${{ secrets.IA_SECRET_3 }}
+          IA_ACCESS_4:  ${{ secrets.IA_ACCESS_4 }}
+          IA_SECRET_4:  ${{ secrets.IA_SECRET_4 }}
+          IA_ACCESS_5:  ${{ secrets.IA_ACCESS_5 }}
+          IA_SECRET_5:  ${{ secrets.IA_SECRET_5 }}
+          IA_ACCESS_6:  ${{ secrets.IA_ACCESS_6 }}
+          IA_SECRET_6:  ${{ secrets.IA_SECRET_6 }}
+          IA_ACCESS_7:  ${{ secrets.IA_ACCESS_7 }}
+          IA_SECRET_7:  ${{ secrets.IA_SECRET_7 }}
+          IA_ACCESS_8:  ${{ secrets.IA_ACCESS_8 }}
+          IA_SECRET_8:  ${{ secrets.IA_SECRET_8 }}
+          IA_ACCESS_9:  ${{ secrets.IA_ACCESS_9 }}
+          IA_SECRET_9:  ${{ secrets.IA_SECRET_9 }}
+          IA_ACCESS_10: ${{ secrets.IA_ACCESS_10 }}
+          IA_SECRET_10: ${{ secrets.IA_SECRET_10 }}
+          IA_LABEL_1:   ${{ secrets.IA_LABEL_1 }}
+          IA_LABEL_2:   ${{ secrets.IA_LABEL_2 }}
+          IA_LABEL_3:   ${{ secrets.IA_LABEL_3 }}
+          IA_LABEL_4:   ${{ secrets.IA_LABEL_4 }}
+          IA_LABEL_5:   ${{ secrets.IA_LABEL_5 }}
+          IA_LABEL_6:   ${{ secrets.IA_LABEL_6 }}
+          IA_LABEL_7:   ${{ secrets.IA_LABEL_7 }}
+          IA_LABEL_8:   ${{ secrets.IA_LABEL_8 }}
+          IA_LABEL_9:   ${{ secrets.IA_LABEL_9 }}
+          IA_LABEL_10:  ${{ secrets.IA_LABEL_10 }}
+        run: |
+          ACC_VAR="IA_ACCESS_${IDX}"
+          SEC_VAR="IA_SECRET_${IDX}"
+          LBL_VAR="IA_LABEL_${IDX}"
+          ACC_VAL="${!ACC_VAR}"
+          SEC_VAL="${!SEC_VAR}"
+          LBL_VAL="${!LBL_VAR}"
+          if [ -z "$ACC_VAL" ] || [ -z "$SEC_VAL" ]; then
+            echo "::warning::no creds for slot $IDX; skipping"
+            echo "SKIP=1" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "IA_ACCESS=$ACC_VAL"      >> "$GITHUB_ENV"
+          echo "IA_SECRET=$SEC_VAL"      >> "$GITHUB_ENV"
+          echo "ACCOUNT_LABEL=${LBL_VAL:-slot$IDX}" >> "$GITHUB_ENV"
+          # Mask the values in workflow logs
+          echo "::add-mask::$ACC_VAL"
+          echo "::add-mask::$SEC_VAL"
+
+      - name: Run etree-meta worker
+        if: env.SKIP != '1'
+        working-directory: ./etree
+        env:
+          BURST_SIZE:  "5"
+          BURST_PAUSE: ${{ github.event.inputs.burst_pause || '300' }}
+          ITEM_GAP:    "4"
+          MAX_ITEMS:   ${{ github.event.inputs.max_items || '5' }}
+          LOG_FILE:    ./etree_meta.log
+        run: |
+          python3 worker_etree_meta.py
+          echo "=== run log ==="
+          cat ./etree_meta.log || true
+
+      - name: Upload log artifact
+        if: always() && env.SKIP != '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: etree-log-slot${{ matrix.idx }}-${{ github.run_id }}
+          path: etree/etree_meta.log
+          retention-days: 7
+          if-no-files-found: ignore
