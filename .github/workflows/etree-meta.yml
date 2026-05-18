@@ -1,7 +1,10 @@
-name: etree-meta — chaos doorways on IA
+name: etree-meta — chaos doorways on IA (pool rotation)
 
-# Runs every 60 min: 10-acct matrix × 5 items/acct = 50 items/cycle.
-# Each runner gets its own IA acct creds. Manual dispatch supported.
+# Runs hourly: pulls full pool (gz+b64 split across IA_POOL_B64_*) and picks
+# 10 accts per cron run via run-number rotation:
+#   slot_in_pool = (GITHUB_RUN_NUMBER * 10 + matrix.idx - 1) % POOL_SIZE
+# A banned.json in the repo gets filtered out at runtime, so each cycle
+# converges on the live pool.
 on:
   workflow_dispatch:
     inputs:
@@ -10,24 +13,27 @@ on:
         required: true
         default: "5"
       burst_size:
-        description: "Items inside one burst (overrides BURST_SIZE=5)"
+        description: "Items per burst (override BURST_SIZE=5)"
         required: true
         default: "5"
       burst_pause:
-        description: "Pause (s) between bursts inside one job"
+        description: "Pause (s) between bursts in one job"
         required: true
         default: "300"
       only_slot:
         description: "Run only this matrix slot (1-10). Empty = all 10."
         required: false
         default: ""
+      rotate_offset:
+        description: "Override rotation offset (default = GITHUB_RUN_NUMBER)"
+        required: false
+        default: ""
   schedule:
-    - cron: "0 * * * *"   # top of every hour
+    - cron: "0 * * * *"
 
 permissions:
-  contents: read
+  contents: write     # so the final reduce job can commit banned.json
 
-# Don't cancel a still-running run when a new one starts.
 concurrency:
   group: etree-meta-${{ github.run_id }}
   cancel-in-progress: false
@@ -41,10 +47,13 @@ jobs:
         idx: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      result-${{ matrix.idx }}: ${{ steps.run_worker.outputs.RESULT }}
+      idx-${{ matrix.idx }}:    ${{ steps.pick.outputs.POOL_IDX }}
     steps:
       - name: Skip if only_slot set and not this slot
         env:
-          IDX: ${{ matrix.idx }}
+          IDX:  ${{ matrix.idx }}
           ONLY: ${{ github.event.inputs.only_slot }}
         run: |
           if [ -n "$ONLY" ] && [ "$IDX" != "$ONLY" ]; then
@@ -55,60 +64,71 @@ jobs:
       - uses: actions/checkout@v4
         if: env.SKIP != '1'
 
-      - name: Pick IA credentials for matrix idx
+      - name: Decode pool + pick acct for this slot
+        id: pick
         if: env.SKIP != '1'
         env:
-          IDX: ${{ matrix.idx }}
-          IA_ACCESS_1:  ${{ secrets.IA_ACCESS_1 }}
-          IA_SECRET_1:  ${{ secrets.IA_SECRET_1 }}
-          IA_ACCESS_2:  ${{ secrets.IA_ACCESS_2 }}
-          IA_SECRET_2:  ${{ secrets.IA_SECRET_2 }}
-          IA_ACCESS_3:  ${{ secrets.IA_ACCESS_3 }}
-          IA_SECRET_3:  ${{ secrets.IA_SECRET_3 }}
-          IA_ACCESS_4:  ${{ secrets.IA_ACCESS_4 }}
-          IA_SECRET_4:  ${{ secrets.IA_SECRET_4 }}
-          IA_ACCESS_5:  ${{ secrets.IA_ACCESS_5 }}
-          IA_SECRET_5:  ${{ secrets.IA_SECRET_5 }}
-          IA_ACCESS_6:  ${{ secrets.IA_ACCESS_6 }}
-          IA_SECRET_6:  ${{ secrets.IA_SECRET_6 }}
-          IA_ACCESS_7:  ${{ secrets.IA_ACCESS_7 }}
-          IA_SECRET_7:  ${{ secrets.IA_SECRET_7 }}
-          IA_ACCESS_8:  ${{ secrets.IA_ACCESS_8 }}
-          IA_SECRET_8:  ${{ secrets.IA_SECRET_8 }}
-          IA_ACCESS_9:  ${{ secrets.IA_ACCESS_9 }}
-          IA_SECRET_9:  ${{ secrets.IA_SECRET_9 }}
-          IA_ACCESS_10: ${{ secrets.IA_ACCESS_10 }}
-          IA_SECRET_10: ${{ secrets.IA_SECRET_10 }}
-          IA_LABEL_1:   ${{ secrets.IA_LABEL_1 }}
-          IA_LABEL_2:   ${{ secrets.IA_LABEL_2 }}
-          IA_LABEL_3:   ${{ secrets.IA_LABEL_3 }}
-          IA_LABEL_4:   ${{ secrets.IA_LABEL_4 }}
-          IA_LABEL_5:   ${{ secrets.IA_LABEL_5 }}
-          IA_LABEL_6:   ${{ secrets.IA_LABEL_6 }}
-          IA_LABEL_7:   ${{ secrets.IA_LABEL_7 }}
-          IA_LABEL_8:   ${{ secrets.IA_LABEL_8 }}
-          IA_LABEL_9:   ${{ secrets.IA_LABEL_9 }}
-          IA_LABEL_10:  ${{ secrets.IA_LABEL_10 }}
+          IDX:           ${{ matrix.idx }}
+          POOL_CHUNKS:   ${{ secrets.IA_POOL_CHUNKS }}
+          POOL_B64_1:    ${{ secrets.IA_POOL_B64_1 }}
+          POOL_B64_2:    ${{ secrets.IA_POOL_B64_2 }}
+          POOL_B64_3:    ${{ secrets.IA_POOL_B64_3 }}
+          POOL_B64_4:    ${{ secrets.IA_POOL_B64_4 }}
+          RUN_NUMBER:    ${{ github.run_number }}
+          OFFSET_OVR:    ${{ github.event.inputs.rotate_offset }}
         run: |
-          ACC_VAR="IA_ACCESS_${IDX}"
-          SEC_VAR="IA_SECRET_${IDX}"
-          LBL_VAR="IA_LABEL_${IDX}"
-          ACC_VAL="${!ACC_VAR}"
-          SEC_VAL="${!SEC_VAR}"
-          LBL_VAL="${!LBL_VAR}"
-          if [ -z "$ACC_VAL" ] || [ -z "$SEC_VAL" ]; then
-            echo "::warning::no creds for slot $IDX; skipping"
-            echo "SKIP=1" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          echo "IA_ACCESS=$ACC_VAL"      >> "$GITHUB_ENV"
-          echo "IA_SECRET=$SEC_VAL"      >> "$GITHUB_ENV"
-          echo "ACCOUNT_LABEL=${LBL_VAL:-slot$IDX}" >> "$GITHUB_ENV"
-          # Mask the values in workflow logs
-          echo "::add-mask::$ACC_VAL"
-          echo "::add-mask::$SEC_VAL"
+          python3 <<'PY'
+          import os, base64, gzip, json
+          chunks_n = int(os.environ.get('POOL_CHUNKS') or '0')
+          parts = []
+          for i in range(1, chunks_n+1):
+              v = os.environ.get(f'POOL_B64_{i}', '')
+              if not v: continue
+              parts.append(v)
+          b64 = ''.join(parts)
+          gz  = base64.b64decode(b64)
+          raw = gzip.decompress(gz)
+          pool = json.loads(raw)
+          print(f'pool size: {len(pool)}')
+
+          # banned.json from the repo (if present)
+          banned_idxs = set()
+          banned_f = 'etree/banned.json'
+          if os.path.exists(banned_f):
+              try:
+                  banned_idxs = set(json.load(open(banned_f)))
+              except Exception:
+                  pass
+          print(f'banned: {len(banned_idxs)} idx blacklisted')
+
+          # active pool = pool indices that are NOT banned
+          active = [i for i in range(len(pool)) if i not in banned_idxs]
+          if not active:
+              print('::error::active pool empty')
+              raise SystemExit(1)
+
+          idx   = int(os.environ['IDX']) - 1   # matrix.idx is 1-based
+          run_n = int(os.environ.get('OFFSET_OVR') or os.environ['RUN_NUMBER'])
+          pos   = (run_n * 10 + idx) % len(active)
+          pool_idx = active[pos]
+          a = pool[pool_idx]
+          # Mask + emit
+          for k in ('a','s'):
+              print(f'::add-mask::{a[k]}')
+          gh_out = os.environ.get('GITHUB_OUTPUT')
+          gh_env = os.environ.get('GITHUB_ENV')
+          with open(gh_out, 'a') as f:
+              f.write(f'POOL_IDX={pool_idx}\n')
+          with open(gh_env, 'a') as f:
+              f.write(f'IA_ACCESS={a["a"]}\n')
+              f.write(f'IA_SECRET={a["s"]}\n')
+              f.write(f'ACCOUNT_LABEL={a["l"]}\n')
+              f.write(f'POOL_IDX={pool_idx}\n')
+          print(f'slot={idx+1}  pool_idx={pool_idx}  active_len={len(active)}  run_n={run_n}')
+          PY
 
       - name: Run etree-meta worker
+        id: run_worker
         if: env.SKIP != '1'
         working-directory: ./etree
         env:
@@ -118,9 +138,31 @@ jobs:
           MAX_ITEMS:   ${{ github.event.inputs.max_items || '5' }}
           LOG_FILE:    ./etree_meta.log
         run: |
+          set +e
           python3 worker_etree_meta.py
-          echo "=== run log ==="
+          rc=$?
+          set -e
+          ok=$(grep -c "OK   band=" ./etree_meta.log || true)
+          fail=$(grep -c "FAIL band=" ./etree_meta.log || true)
+          echo "RESULT=ok=$ok fail=$fail rc=$rc pool_idx=$POOL_IDX" >> "$GITHUB_OUTPUT"
+          echo "=== summary  ok=$ok  fail=$fail  rc=$rc  pool_idx=$POOL_IDX ==="
           cat ./etree_meta.log || true
+          # also write a per-slot verdict file so the reduce job can collect
+          mkdir -p ../verdict
+          if [ "$ok" -gt 0 ]; then
+            echo "$POOL_IDX" > "../verdict/slot${{ matrix.idx }}.live"
+          else
+            echo "$POOL_IDX" > "../verdict/slot${{ matrix.idx }}.banned"
+          fi
+
+      - name: Upload per-slot verdict
+        if: always() && env.SKIP != '1'
+        uses: actions/upload-artifact@v4
+        with:
+          name: verdict-slot${{ matrix.idx }}-${{ github.run_id }}
+          path: verdict/
+          retention-days: 1
+          if-no-files-found: ignore
 
       - name: Upload log artifact
         if: always() && env.SKIP != '1'
@@ -130,3 +172,58 @@ jobs:
           path: etree/etree_meta.log
           retention-days: 7
           if-no-files-found: ignore
+
+  reduce:
+    needs: upload
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Download all verdicts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: verdict-slot*-${{ github.run_id }}
+          path: verdict_in/
+          merge-multiple: true
+
+      - name: Merge verdicts into etree/banned.json + etree/live.json
+        run: |
+          mkdir -p etree
+          python3 <<'PY'
+          import os, json, glob
+          banned = set()
+          live = set()
+          if os.path.exists('etree/banned.json'):
+              try: banned = set(json.load(open('etree/banned.json')))
+              except: pass
+          if os.path.exists('etree/live.json'):
+              try: live = set(json.load(open('etree/live.json')))
+              except: pass
+          for p in glob.glob('verdict_in/*.banned'):
+              try: banned.add(int(open(p).read().strip()))
+              except: pass
+          for p in glob.glob('verdict_in/*.live'):
+              try: live.add(int(open(p).read().strip()))
+              except: pass
+          # 'live' takes precedence over 'banned' for same idx (acct recovered)
+          banned -= live
+          json.dump(sorted(banned), open('etree/banned.json','w'))
+          json.dump(sorted(live),   open('etree/live.json','w'))
+          print(f'banned: {len(banned)}  live: {len(live)}')
+          PY
+
+      - name: Commit + push updated banned/live
+        run: |
+          git config user.name  "iontube-bot"
+          git config user.email "iontube-bot@users.noreply.github.com"
+          git add etree/banned.json etree/live.json
+          if git diff --cached --quiet; then
+            echo "no changes"
+            exit 0
+          fi
+          git commit -m "etree-meta: update banned/live pool (run ${{ github.run_id }})"
+          git push origin main
