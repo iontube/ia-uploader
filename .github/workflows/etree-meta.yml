@@ -47,9 +47,6 @@ jobs:
         idx: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    outputs:
-      result-${{ matrix.idx }}: ${{ steps.run_worker.outputs.RESULT }}
-      idx-${{ matrix.idx }}:    ${{ steps.pick.outputs.POOL_IDX }}
     steps:
       - name: Skip if only_slot set and not this slot
         env:
